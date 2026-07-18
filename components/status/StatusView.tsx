@@ -85,26 +85,41 @@ export function StatusView({
 
   const handleExport = () => {
     const wb = xlsx.utils.book_new();
-    const exportData = tabulatedCompanies.map(c => ({
-      "Company Name": c.name,
-      "Contact Person": c.contactPerson || "Not Provided",
-      "Designation": c.designation || "Not Provided",
-      "Contact Number": c.contactNumber || "Not Provided",
-      "Email": c.email || "Not Provided",
-      "Industry": c.industries.join(", "),
-      "Country": c.country,
-      "Status": c.status || "Pending",
-      "Source File": c.source || "Unknown",
-      "Joined/Updated": c.updatedAt || "N/A",
-      "LinkedIn": c.linkedin || "",
-      "Website": c.website || ""
-    }));
+    
+    const generateExportData = (companies: typeof filteredCompanies) => {
+      return companies.map(c => ({
+        "Company Name": c.name,
+        "Contact Person": c.contactPerson || "Not Provided",
+        "Designation": c.designation || "Not Provided",
+        "Contact Number": c.contactNumber || "Not Provided",
+        "Email": c.email || "Not Provided",
+        "Industry": c.industries.join(", "),
+        "Country": c.country,
+        "Status": c.status || "Not Active",
+        "Source File": c.source || "Unknown",
+        "Joined/Updated": c.updatedAt || "N/A",
+        "LinkedIn": c.linkedin || "",
+        "Website": c.website || ""
+      }));
+    };
 
-    const ws = xlsx.utils.json_to_sheet(exportData);
-    const sheetTitle = `${statusTab}_${selectedSubCategory.replace(/\s+/g, "_")}`.substring(0, 31);
-    xlsx.utils.book_append_sheet(wb, ws, sheetTitle);
-    xlsx.writeFile(wb, `LifeLeads_Status_${statusTab}_${selectedSubCategory}.xlsx`);
-    showToast(`Exported ${exportData.length} records to Excel!`);
+    const notActiveData = generateExportData(filteredCompanies.filter(c => !c.status || c.status === "Not Active"));
+    const pendingData = generateExportData(filteredCompanies.filter(c => c.status === "Pending"));
+    const acceptedData = generateExportData(filteredCompanies.filter(c => c.status === "Accepted"));
+    const rejectedData = generateExportData(filteredCompanies.filter(c => c.status === "Rejected"));
+
+    if (notActiveData.length > 0) xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(notActiveData), "Not Active");
+    if (pendingData.length > 0) xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(pendingData), "Pending");
+    if (acceptedData.length > 0) xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(acceptedData), "Accepted");
+    if (rejectedData.length > 0) xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(rejectedData), "Rejected");
+
+    if (filteredCompanies.length === 0) {
+      xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet([]), "Empty");
+    }
+
+    const safeTitle = selectedSubCategory.replace(/[\/\?\*\[\]:]/g, "_").substring(0, 31);
+    xlsx.writeFile(wb, `LifeLeads_Status_All_${safeTitle}.xlsx`);
+    showToast(`Exported ${filteredCompanies.length} records across 4 sheets!`);
   };
 
   const handleUpdateStatus = async (newStatus: "Accepted" | "Rejected") => {
@@ -226,50 +241,12 @@ export function StatusView({
         ))}
       </div>
 
-      {/* Excel File Filter & Industry/Country Filters right below status overview cards */}
-      <div className="flex flex-col md:flex-row items-center justify-start gap-3 w-full p-3 bg-white/60 dark:bg-[#14120e]/60 rounded-2xl border border-gray-100 dark:border-white/5">
-        <div className="flex items-center gap-2 mr-2">
-          <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          <span className="text-xs font-black text-[#133020] dark:text-gray-300 uppercase tracking-wider">File / Filters:</span>
-        </div>
 
-        <SelectDropdown
-          value={selectedSource}
-          onChange={setSelectedSource}
-          options={allSources.map(s => ({ label: String(s), value: String(s) }))}
-          className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-[180px] shadow-xs"
-          dropdownClassName="absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
-          optionClassName="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-          activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347]"
-        />
-
-        <SelectDropdown
-          value={selectedIndustry}
-          onChange={setSelectedIndustry}
-          options={allIndustries.map(i => ({ label: String(i), value: String(i) }))}
-          className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-[170px] shadow-xs"
-          dropdownClassName="absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
-          optionClassName="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-          activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347]"
-        />
-
-        <SelectDropdown
-          value={selectedCountry}
-          onChange={setSelectedCountry}
-          options={allCountries.map(c => ({ label: String(c), value: String(c) }))}
-          className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-[160px] shadow-xs"
-          dropdownClassName="absolute top-full right-0 mt-2 w-[200px] bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
-          optionClassName="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-          activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347]"
-        />
-      </div>
 
       {/* Classification Pills above tabulated display (Pending, Accepted, Rejected, Not Active) */}
       <div className="flex items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 pb-3">
         <div className="flex items-center gap-2">
-          {(["Pending", "Accepted", "Rejected", "Not Active"] as const).map((tab) => {
+          {(["Not Active", "Pending", "Accepted", "Rejected"] as const).map((tab) => {
             const count = filteredCompanies.filter(c => {
               if (tab === "Accepted") return c.status === "Accepted";
               if (tab === "Rejected") return c.status === "Rejected";
@@ -302,9 +279,17 @@ export function StatusView({
             );
           })}
         </div>
-        <span className="text-xs font-semibold text-gray-400 italic hidden md:inline">
-          Click any row to inspect details or make an offer decision
-        </span>
+        <div className="hidden md:block">
+          <SelectDropdown
+            value={selectedSource}
+            onChange={setSelectedSource}
+            options={allSources.map(s => ({ label: String(s), value: String(s) }))}
+            className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-[180px] shadow-xs"
+            dropdownClassName="absolute top-full right-0 mt-2 w-[220px] bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
+            optionClassName="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors truncate"
+            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347] truncate"
+          />
+        </div>
       </div>
 
       {/* Tabulated Display */}
@@ -355,9 +340,17 @@ export function StatusView({
 
                 {/* Industry */}
                 <div className="flex flex-wrap gap-1 items-center">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold text-[#133020] dark:text-[#ffb347] bg-[#f5eedb] dark:bg-[#1c1915] border border-[#ffb347]/30 truncate max-w-[180px]">
-                    {company.industries[0] || "General"}
-                  </span>
+                  {company.industries.length > 0 ? (
+                    company.industries.map((ind, idx) => (
+                      <span key={idx} className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold text-[#133020] dark:text-[#ffb347] bg-[#f5eedb] dark:bg-[#1c1915] border border-[#ffb347]/30 truncate max-w-[180px]">
+                        {ind}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold text-[#133020] dark:text-[#ffb347] bg-[#f5eedb] dark:bg-[#1c1915] border border-[#ffb347]/30 truncate max-w-[180px]">
+                      General
+                    </span>
+                  )}
                 </div>
 
                 {/* Status */}

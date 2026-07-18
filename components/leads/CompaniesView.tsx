@@ -115,10 +115,15 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     setIsComposingEmail(false);
   };
 
+  const handleManualContact = () => {
+    setHasSentEmail(true);
+    showToast(`Marked as contacted manually! Process button is now unlocked.`);
+  };
+
   const handleProcessLead = async () => {
     if (!selectedCompany) return;
     if (!hasSentEmail) {
-      showToast("Please send an email first via the upper right Mail icon to unlock processing.");
+      showToast("Please send an email or mark as contacted first to unlock processing.");
       return;
     }
 
@@ -222,7 +227,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
         </div>
 
         {/* Filters Group */}
-        <div className="flex flex-1 items-center w-full gap-3 xl:pl-4 xl:border-l border-gray-100 dark:border-white/10 overflow-x-auto pb-1 xl:pb-0">
+        <div className="flex flex-wrap items-center justify-end gap-3 xl:pl-4 xl:border-l border-gray-100 dark:border-white/10 pb-1 xl:pb-0">
           <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hidden xl:block flex-shrink-0">Filters</span>
           
           <SelectDropdown
@@ -234,7 +239,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
             }
-            className="w-full flex-1 flex items-center justify-between gap-2 px-4 py-3 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-[#046241] dark:text-[#ffb347]"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-[#046241] dark:text-[#ffb347]"
             dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
             optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
             activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
@@ -249,7 +254,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
               </svg>
             }
-            className="w-full flex-1 flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-semibold text-gray-700 dark:text-gray-200"
+            className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-semibold text-gray-700 dark:text-gray-200"
             dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
             optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
             activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
@@ -264,7 +269,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
               </svg>
             }
-            className="w-full flex-1 flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-semibold text-gray-700 dark:text-gray-200"
+            className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-semibold text-gray-700 dark:text-gray-200"
             dropdownClassName="absolute top-full right-0 mt-2 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
             optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
             activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
@@ -274,7 +279,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
       {/* Grid Content: 5 Columns x 4 Rows = 20 cards per page */}
       {paginatedCompanies.length > 0 ? (
-        <>
+        <div className="flex flex-col w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-1">
             {paginatedCompanies.map((company, idx) => (
               <CompanyCard key={idx} company={company} onClick={() => setSelectedCompany(company)} />
@@ -283,7 +288,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
           {/* Pagination Navigation (20 cards per page) */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-2 py-2 mt-2">
+            <div className="flex items-center justify-between px-2 py-2 mt-6 mb-4">
               <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
                 Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredCompanies.length)} of {filteredCompanies.length} cards
               </span>
@@ -308,7 +313,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
               </div>
             </div>
           )}
-        </>
+        </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 mt-4 bg-white/50 dark:bg-[#1a1714]/50 border border-dashed border-[#046241]/20 dark:border-white/10 rounded-3xl">
           <div className="w-16 h-16 bg-[#f5eedb] dark:bg-[#133020] rounded-full flex items-center justify-center mb-4 shadow-sm border border-[#046241]/20 dark:border-[#ffb347]/20">
@@ -335,10 +340,10 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
           <div 
             className="bg-white/95 dark:bg-[#14120e]/95 backdrop-blur-xl shadow-2xl rounded-3xl w-full max-w-2xl border border-gray-100 dark:border-white/10 flex flex-col relative max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 z-10"
           >
-            <div className="flex flex-col h-full relative overflow-y-auto">
+            <div className="flex flex-col h-full relative overflow-hidden">
             
             {/* Top Control Bar inside Drawer */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-white/5">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-white/5">
               {isComposingEmail ? (
                 <button
                   onClick={() => setIsComposingEmail(false)}
@@ -460,19 +465,19 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
               </div>
             ) : (
               /* Lead Details View */
-              <div className="p-8 flex flex-col items-center mt-2">
+              <div className="p-4 flex flex-col items-center mt-1">
                 {/* Company Icon (Top Center) */}
-                <div className="w-24 h-24 rounded-3xl bg-[#046241] flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-[#046241]/20 mb-6 border-4 border-[#f5eedb] dark:border-white/5">
+                <div className="w-16 h-16 rounded-3xl bg-[#046241] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-[#046241]/20 mb-3 border-4 border-[#f5eedb] dark:border-white/5">
                   {selectedCompany.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()}
                 </div>
 
                 {/* Company Name */}
-                <h2 className="text-2xl font-black text-[#133020] dark:text-white mb-2 text-center">
+                <h2 className="text-xl font-black text-[#133020] dark:text-white mb-1 text-center">
                   {selectedCompany.name}
                 </h2>
 
                 {/* Country */}
-                <div className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400 mb-4 bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-full">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-3 bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-full">
                   <svg className="w-3.5 h-3.5 text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
@@ -481,7 +486,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 </div>
 
                 {/* Industry Type */}
-                <div className="flex flex-wrap gap-2 justify-center mb-8">
+                <div className="flex flex-wrap gap-2 justify-center mb-4">
                   {selectedCompany.industries.map(ind => (
                     <span key={ind} className="px-3.5 py-1 rounded-full bg-[#046241]/10 dark:bg-[#046241]/30 text-[11px] font-black text-[#046241] dark:text-[#4ade80] uppercase tracking-wider">
                       {ind}
@@ -490,9 +495,9 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 </div>
 
                 {/* Details List */}
-                <div className="w-full space-y-5 pt-6 border-t border-gray-100 dark:border-white/5">
+                <div className="w-full space-y-3 pt-4 border-t border-gray-100 dark:border-white/5">
                   {/* Contact Person with Designation below name */}
-                  <div className="flex flex-col gap-1 p-4 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/5">
+                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Person</label>
                     <div className="flex items-center gap-3 text-[#133020] dark:text-white font-extrabold text-base mt-0.5">
                       <svg className="w-5 h-5 text-[#046241]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -506,13 +511,21 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                   </div>
 
                   {/* Contact Number below contact person */}
-                  <div className="flex flex-col gap-1 p-4 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/5">
+                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Number</label>
-                    <div className="flex items-center gap-3 text-[#133020] dark:text-white font-bold text-sm mt-0.5">
-                      <svg className="w-5 h-5 text-[#046241]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.596-5.25-3.95-6.847-6.847l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-                      </svg>
-                      {selectedCompany.contactNumber || "Not Provided"}
+                    <div className="flex items-center justify-between w-full mt-0.5">
+                      <div className="flex items-center gap-3 text-[#133020] dark:text-white font-bold text-sm">
+                        <svg className="w-5 h-5 text-[#046241]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.596-5.25-3.95-6.847-6.847l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                        </svg>
+                        {selectedCompany.contactNumber || "Not Provided"}
+                      </div>
+                      <button 
+                        onClick={handleManualContact} 
+                        className="px-4 py-1.5 bg-[#046241]/10 text-[#046241] dark:bg-[#ffb347]/10 dark:text-[#ffb347] hover:bg-[#046241]/20 dark:hover:bg-[#ffb347]/20 text-xs font-bold rounded-lg shadow-sm hover:scale-105 transition-all"
+                      >
+                        Contacted
+                      </button>
                     </div>
                   </div>
 
@@ -560,7 +573,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                           </svg>
-                          Process Lead (Locked - Send Mail First)
+                          Send Mail First or Contact Client
                         </>
                       ) : (
                         <>

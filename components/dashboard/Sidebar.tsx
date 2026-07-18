@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { LogoIcon } from "../ui/LogoIcon";
 import type { DashboardUser } from "../../lib/hooks/useDashboardData";
 
 interface SidebarProps {
@@ -25,7 +24,6 @@ export function Sidebar({
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
@@ -100,60 +98,57 @@ export function Sidebar({
     <nav className={`h-full bg-[#0F2E1E] dark:bg-[#14120e] border-r border-[#0F2E1E] dark:border-[#14120e] ${isExpanded ? "w-64" : "w-20"} flex flex-col justify-between py-6 select-none text-white flex-shrink-0 z-30 transition-all duration-300`}>
       {/* Top Branding Section */}
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between px-5 h-14 overflow-hidden relative border-b border-white/5 pb-3">
-          <div className="flex items-center gap-3">
-            <LogoIcon />
-            {isExpanded && (
-              <div className="flex flex-col whitespace-nowrap animate-in fade-in duration-300">
-                <span className="text-[15px] font-black text-white leading-none tracking-wide">LIFELEADS</span>
-                <span className="text-[9px] font-bold text-[#ffb347] tracking-wider uppercase leading-none mt-1">powered by lifewood ph</span>
-              </div>
+        <div className="flex flex-col gap-3 px-3 relative border-b border-white/5 pb-3">
+          <div className="flex items-center justify-center bg-black/20 dark:bg-white/5 rounded-2xl border border-white/5 overflow-hidden px-1 py-1 h-14 w-full transition-all duration-300">
+            {isExpanded ? (
+              <img 
+                src="/new-top-logo.png" 
+                alt="LifeLeads Logo" 
+                className="w-full h-full object-contain scale-[1.4] transition-all duration-300"
+              />
+            ) : (
+              <img 
+                src="/magnify.png" 
+                alt="LifeLeads Logo Icon" 
+                className="h-full w-full object-contain scale-[2.5] transition-all duration-300"
+              />
             )}
           </div>
 
-          {/* Toggle button */}
-          <button
-            onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors cursor-pointer flex-shrink-0"
-            title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
-            aria-label={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
-          >
-            <svg className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </button>
+          {/* Toggle button placed below the logo */}
+          <div className="flex justify-center w-full transition-all duration-300">
+            <button
+              onClick={toggleSidebar}
+              className="flex items-center justify-center gap-2 p-1 rounded-lg text-gray-400 hover:text-white transition-colors cursor-pointer flex-shrink-0"
+              title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
+              aria-label={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
+            >
+              {isExpanded && <span className="text-xs font-light tracking-wide">Collapse</span>}
+              <svg className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Nav Menu Links */}
         <div className="flex flex-col gap-1.5 px-3">
           {navItems.map((item) => {
             let isActive = false;
-            if (item.name === "Leads") isActive = pathname === "/leads" || pathname === "/companies" || activeTab === "Companies" || activeTab === "Leads";
-            else if (item.name === "Dashboard") isActive = pathname === "/dashboard" || pathname === "/" || activeTab === "Dashboard";
-            else if (item.name === "Status") isActive = pathname === "/status" || activeTab === "Status";
-            else if (item.name === "Records") isActive = pathname === "/records" || activeTab === "Records";
-            else isActive = activeTab === item.name;
+            if (item.name === "Leads") isActive = pathname === "/leads" || pathname === "/companies";
+            else if (item.name === "Dashboard") isActive = pathname === "/dashboard" || pathname === "/";
+            else if (item.name === "Status") isActive = pathname === "/status";
+            else if (item.name === "Records") isActive = pathname === "/records";
 
             return (
               <button
                 key={item.name}
                 onClick={(e) => {
                   e.preventDefault();
-                  if (item.name === "Leads" && pathname !== "/leads") {
-                    setIsNavigating(true);
-                    setTimeout(() => { router.push("/leads"); setTimeout(() => setIsNavigating(false), 500); }, 300);
-                  } else if (item.name === "Dashboard" && pathname !== "/dashboard") {
-                    setIsNavigating(true);
-                    setTimeout(() => { router.push("/dashboard"); setTimeout(() => setIsNavigating(false), 500); }, 300);
-                  } else if (item.name === "Status" && pathname !== "/status") {
-                    setIsNavigating(true);
-                    setTimeout(() => { router.push("/status"); setTimeout(() => setIsNavigating(false), 500); }, 300);
-                  } else if (item.name === "Records" && pathname !== "/records") {
-                    setIsNavigating(true);
-                    setTimeout(() => { router.push("/records"); setTimeout(() => setIsNavigating(false), 500); }, 300);
-                  } else {
-                    setActiveTab(item.name);
-                  }
+                  if (item.name === "Leads") router.push("/leads");
+                  else if (item.name === "Dashboard") router.push("/dashboard");
+                  else if (item.name === "Status") router.push("/status");
+                  else if (item.name === "Records") router.push("/records");
                 }}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
                   isActive
@@ -183,24 +178,46 @@ export function Sidebar({
       {/* Bottom Profile & Lifewood Branding Section */}
       <div className="flex flex-col gap-3 mb-3 px-3">
         {/* Lifewood Logo right above the user name */}
-        <div className="flex items-center justify-center px-2 py-1.5 bg-black/20 dark:bg-white/5 rounded-xl border border-white/5">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#ffb347] animate-pulse flex-shrink-0" />
-            {isExpanded ? (
-              <span className="text-[10px] font-black text-[#ffb347] uppercase tracking-widest whitespace-nowrap">
-                LIFEWOOD PH
-              </span>
-            ) : (
-              <span className="text-[10px] font-black text-[#ffb347] uppercase tracking-tighter">
-                LW
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-center px-2 py-2 bg-black/20 dark:bg-white/5 rounded-xl border border-white/5 h-12 overflow-hidden relative w-full">
+          {isExpanded ? (
+            <div className="relative h-full flex items-center justify-center">
+              {/* Text part (Green neon) */}
+              <img 
+                src="/lifewood-logo.png" 
+                alt="Lifewood Logo Text" 
+                className={`h-full w-auto object-contain transition-all duration-300 pointer-events-none`}
+                style={{ 
+                  filter: isDarkMode ? 'brightness(0) invert(1) drop-shadow(0 0 2px rgba(255,255,255,0.5))' : 'none',
+                  clipPath: 'inset(0 0 0 12.5%)'
+                }}
+                suppressHydrationWarning
+              />
+              {/* Diamond part (Saffron neon) */}
+              <img 
+                src="/lifewood-logo.png" 
+                alt="Lifewood Logo Diamond" 
+                className={`absolute top-0 left-0 h-full w-auto object-contain transition-all duration-300 pointer-events-none`}
+                style={{ 
+                  filter: isDarkMode ? 'brightness(0) saturate(100%) invert(78%) sepia(35%) saturate(1478%) hue-rotate(331deg) brightness(102%) contrast(101%) drop-shadow(0 0 6px rgba(255, 179, 71, 0.8))' : 'none',
+                  clipPath: 'inset(0 87.5% 0 0)'
+                }}
+                suppressHydrationWarning
+              />
+            </div>
+          ) : (
+            <img 
+              src="/lifewood-logo.png" 
+              alt="LW" 
+              className={`h-full w-[16px] object-cover object-left scale-[1.35] origin-left transition-all duration-300`}
+              style={{ filter: isDarkMode ? 'brightness(0) saturate(100%) invert(78%) sepia(35%) saturate(1478%) hue-rotate(331deg) brightness(102%) contrast(101%) drop-shadow(0 0 6px rgba(255, 179, 71, 0.8))' : 'none' }}
+              suppressHydrationWarning
+            />
+          )}
         </div>
 
         {/* Profile card area */}
-        <div className="px-3 py-2.5 flex items-center justify-between gap-2 overflow-hidden bg-white/5 dark:bg-white/5 rounded-2xl border border-white/10 dark:border-white/5 transition-all duration-300">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className={`py-2.5 flex items-center overflow-hidden bg-white/5 dark:bg-white/5 rounded-2xl border border-white/10 dark:border-white/5 transition-all duration-300 ${isExpanded ? 'px-3 justify-between gap-2' : 'px-0 justify-center'}`}>
+          <div className={`flex items-center min-w-0 ${isExpanded ? 'gap-3' : 'gap-0'}`}>
             {/* Initials badge */}
             <div className="w-9 h-9 rounded-full bg-[#046241] dark:bg-[#ffb347] flex items-center justify-center font-bold text-white dark:text-[#133020] text-xs flex-shrink-0 shadow-inner">
               {mounted && user ? getInitials(user.name) : "U"}
@@ -218,54 +235,40 @@ export function Sidebar({
           </div>
 
           {/* Theme Toggle & Sign out */}
-          <div className={`flex items-center gap-1 ${!isExpanded ? 'flex-col mt-1' : ''}`}>
-            <button
-              onClick={() => setIsDarkMode((currentMode) => !currentMode)}
-              className="p-1.5 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 text-gray-300 hover:text-white transition-colors cursor-pointer"
-              title={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
-              aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
-            >
-              {isDarkMode ? (
+          {isExpanded && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsDarkMode((currentMode) => !currentMode)}
+                className="p-1.5 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                title={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+                aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+              >
+                {isDarkMode ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="4" />
+                    <path strokeLinecap="round" d="M12 2.25v1.5M12 20.25v1.5M4.93 4.93l1.06 1.06M18.01 18.01l1.06 1.06M2.25 12h1.5M20.25 12h1.5M4.93 19.07l1.06-1.06M18.01 5.99l1.06-1.06" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                  </svg>
+                )}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                title="Log out"
+                aria-label="Log out"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="4" />
-                  <path strokeLinecap="round" d="M12 2.25v1.5M12 20.25v1.5M4.93 4.93l1.06 1.06M18.01 18.01l1.06 1.06M2.25 12h1.5M20.25 12h1.5M4.93 19.07l1.06-1.06M18.01 5.99l1.06-1.06" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
                 </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                </svg>
-              )}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 text-gray-300 hover:text-white transition-colors cursor-pointer"
-              title="Log out"
-              aria-label="Log out"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-              </svg>
-            </button>
-          </div>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Global Page Transition Loader */}
-      {isNavigating && (
-        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#f5eedb]/90 dark:bg-[#0d0b09]/90 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in zoom-in-95">
-          <div className="flex flex-col items-center">
-             <div className="w-64 h-px bg-gradient-to-r from-transparent via-gray-900 dark:via-white to-transparent mb-4 opacity-50 shadow-[0_0_8px_rgba(0,0,0,0.5)]"></div>
-             <div className="flex items-center gap-3">
-               <div className="flex gap-1.5">
-                 <span className="w-1.5 h-1.5 rounded-full bg-gray-500 dark:bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                 <span className="w-1.5 h-1.5 rounded-full bg-gray-500 dark:bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                 <span className="w-1.5 h-1.5 rounded-full bg-gray-500 dark:bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></span>
-               </div>
-               <span className="text-xs font-black text-gray-500 dark:text-gray-400 tracking-widest uppercase">Initializing System</span>
-             </div>
-          </div>
-        </div>
-      )}
     </nav>
   );
 }

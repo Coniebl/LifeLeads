@@ -61,6 +61,7 @@ export function useDashboardData() {
     totalIndustries: 0,
     acceptedOfferCount: 0,
     monthlyAccepted: Array(12).fill(0),
+    monthlyRejected: Array(12).fill(0),
   });
 
   const [availableFiles, setAvailableFiles] = useState<string[]>([]);
@@ -124,7 +125,10 @@ export function useDashboardData() {
           company.leads += 1;
 
           if (record.industries?.trim()) {
-            record.industries.split(',').forEach((ind: string) => company.industries.add(ind.trim()));
+            record.industries.split(',').forEach((ind: string) => {
+              const cleaned = ind.replace(/[\[\]'"]/g, '').trim();
+              if (cleaned) company.industries.add(cleaned);
+            });
           }
         });
 
@@ -146,6 +150,7 @@ export function useDashboardData() {
         const countryMap: Record<string, { count: number; companies: string[] }> = {};
         const industryCountMap: Record<string, number> = {};
         const monthlyAccepted = Array(12).fill(0);
+        const monthlyRejected = Array(12).fill(0);
 
         records.forEach(r => {
           if (r.source_file && r.source_file.trim() !== "") {
@@ -169,12 +174,13 @@ export function useDashboardData() {
           const genIndustry = companyToGenIndustry.get(name) || "Other";
           industryCountMap[genIndustry] = (industryCountMap[genIndustry] || 0) + 1;
           
-          // Add to monthly chart if created_at exists AND it's accepted
-          if (company.status === "Accepted" && company.created_at) {
+          // Add to monthly chart if created_at exists AND it's accepted or rejected
+          if (company.created_at) {
             const date = new Date(company.created_at);
             const month = date.getMonth(); 
             if (!isNaN(month)) {
-              monthlyAccepted[month]++;
+              if (company.status === "Accepted") monthlyAccepted[month]++;
+              if (company.status === "Rejected") monthlyRejected[month]++;
             }
           }
         });
@@ -190,6 +196,7 @@ export function useDashboardData() {
           totalIndustries: uniqueIndustries.size,
           acceptedOfferCount: acceptedCount,
           monthlyAccepted,
+          monthlyRejected,
         });
 
         const colors = [

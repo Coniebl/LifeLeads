@@ -58,7 +58,7 @@ export function CompanyCard({ company, onClick }: { company: CompanyData; onClic
         
         <div className="flex flex-col items-start gap-2 mb-4">
           <div className="inline-block px-3 py-1 rounded-full bg-[#046241]/10 dark:bg-[#046241]/30 text-[10px] font-bold text-[#046241] dark:text-[#4ade80] uppercase tracking-wider">
-            {company.industries.length > 0 ? company.industries[0] : "General"}
+            {company.industries.length > 0 ? company.industries[0].replace(/[\[\]'"]/g, "") : "General"}
           </div>
           <div className="flex items-center gap-1.5 truncate max-w-full text-xs font-medium text-gray-500 dark:text-gray-400">
             <span className="uppercase text-[9px] text-[#ffb347] font-black">{countryCode}</span>

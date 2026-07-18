@@ -1,20 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { useDashboardData } from "../../lib/hooks/useDashboardData";
-import { Sidebar } from "../../components/dashboard/Sidebar";
+import React, { useState, useEffect } from "react";
 import { StatusView } from "../../components/status/StatusView";
 import type { CompanyData } from "../../components/leads/CompanyCard";
 
 export default function StatusPage() {
-  const {
-    user,
-    isDarkMode,
-    setIsDarkMode,
-    activeTab,
-    setActiveTab,
-    handleLogout,
-  } = useDashboardData();
 
   const [companies, setCompanies] = useState<CompanyData[]>([]);
 
@@ -52,7 +42,7 @@ export default function StatusPage() {
           if (!companyMap.has(name)) {
             let inds: string[] = [];
             if (r.industries) {
-               inds = r.industries.split(',').map((s: string) => s.trim()).filter(Boolean);
+               inds = r.industries.split(',').map((s: string) => s.replace(/[\[\]'"]/g, '').trim()).filter(Boolean);
             }
             if (inds.length === 0 && indData) {
                const indRows = indData.filter((i: any) => i.company_name === name);
@@ -93,7 +83,7 @@ export default function StatusPage() {
              const c = companyMap.get(name)!;
              c.leads += 1;
              if (r.industries) {
-                const inds = r.industries.split(',').map((s: string) => s.trim()).filter(Boolean);
+                const inds = r.industries.split(',').map((s: string) => s.replace(/[\[\]'"]/g, '').trim()).filter(Boolean);
                 inds.forEach((ind: string) => {
                    if (!c.industries.includes(ind)) c.industries.push(ind);
                 });
@@ -111,19 +101,8 @@ export default function StatusPage() {
   }, []);
 
   return (
-    <main className="h-screen w-full flex overflow-hidden bg-[#f5eedb] dark:bg-[#0d0b09] transition-colors duration-300 font-sans">
-      <Sidebar
-        user={user}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
-        activeTab="Status"
-        setActiveTab={setActiveTab}
-        handleLogout={handleLogout}
-      />
-
-      <div className="flex-1 h-full overflow-y-auto p-6 md:p-8 transition-all duration-300 bg-[#f5eedb] dark:bg-[#0d0b09]">
-        <StatusView companies={companies} setCompanies={setCompanies} />
-      </div>
-    </main>
+    <>
+      <StatusView companies={companies} setCompanies={setCompanies} />
+    </>
   );
 }

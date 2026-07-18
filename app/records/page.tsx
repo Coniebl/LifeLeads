@@ -3,21 +3,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as xlsx from "xlsx";
 import { supabase } from "../../lib/supabase/client";
-import { useDashboardData } from "../../lib/hooks/useDashboardData";
-import { Sidebar } from "../../components/dashboard/Sidebar";
 import { RecordsTable, type RecordData } from "../../components/records/RecordsTable";
 import { CompletedFilesModal } from "../../components/records/CompletedFilesModal";
 import { CustomSelect } from "../../components/ui/CustomSelect";
 
 export default function RecordsPage() {
-  const {
-    user,
-    isDarkMode,
-    setIsDarkMode,
-    activeTab,
-    setActiveTab,
-    handleLogout,
-  } = useDashboardData();
 
   const [records, setRecords] = useState<RecordData[]>([]);
   const [completedFiles, setCompletedFiles] = useState<string[]>([]);
@@ -260,20 +250,7 @@ export default function RecordsPage() {
   };
 
   return (
-    <main className="h-screen w-full flex overflow-hidden bg-[#f5eedb] dark:bg-[#0d0b09] transition-colors duration-300 font-sans">
-      
-      {/* Left Navigation Bar */}
-      <Sidebar
-        user={user}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
-        activeTab="Records"
-        setActiveTab={setActiveTab}
-        handleLogout={handleLogout}
-      />
-
-      {/* Right Main Content Area */}
-      <div className="flex-1 h-full overflow-y-auto p-6 md:p-8 transition-all duration-300 bg-[#f5eedb] dark:bg-[#0d0b09]">
+    <>
         
         {/* Header Section */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
@@ -467,8 +444,6 @@ export default function RecordsPage() {
         {/* Data Table with 50 items per page pagination */}
         <RecordsTable records={sortedRecords} />
 
-      </div>
-
       {isModalOpen && (
         <CompletedFilesModal
           completedFiles={completedFiles}
@@ -476,6 +451,6 @@ export default function RecordsPage() {
           onDeleteFiles={handleDeleteCompletedFiles}
         />
       )}
-    </main>
+    </>
   );
 }

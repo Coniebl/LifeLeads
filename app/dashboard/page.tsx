@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { useDashboardData } from "../../lib/hooks/useDashboardData";
-import { Sidebar } from "../../components/dashboard/Sidebar";
+import { useDashboardContext } from "../../lib/contexts/DashboardContext";
 import { SummaryCards } from "../../components/dashboard/SummaryCards";
 import { PortfolioStatus } from "../../components/dashboard/PortfolioStatus";
 import { CountryChart } from "../../components/dashboard/CountryChart";
@@ -12,18 +11,12 @@ import { MonthlyOffersChart } from "../../components/dashboard/MonthlyOffersChar
 
 export default function DashboardPage() {
   const {
-    user,
     stats,
     countriesData,
     industriesData,
-    isDarkMode,
-    setIsDarkMode,
-    activeTab,
-    setActiveTab,
-    handleLogout,
     availableFiles,
     allCompanyNames
-  } = useDashboardData();
+  } = useDashboardContext();
 
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedFile, setSelectedFile] = React.useState("All Files");
@@ -38,20 +31,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <main className="h-screen w-full flex overflow-hidden bg-[#f5eedb] dark:bg-[#0d0b09] transition-colors duration-300 font-sans">
-
-      {/* Left Navigation Bar */}
-      <Sidebar
-        user={user}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        handleLogout={handleLogout}
-      />
-
-      {/* Right Main Content Area */}
-      <div className="flex-1 h-full overflow-y-auto p-6 md:p-8 transition-all duration-300 bg-[#f5eedb] dark:bg-[#0d0b09]">
+    <>
 
         {/* Top Bar Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-2">
@@ -102,8 +82,9 @@ export default function DashboardPage() {
             <div className="flex-[2]">
               <MonthlyOffersChart 
                 selectedFile={selectedFile} 
-                hasData={stats.acceptedOfferCount > 0} 
-                monthlyData={stats.monthlyAccepted}
+                hasData={stats.acceptedOfferCount > 0 || stats.rejectedCount > 0} 
+                monthlyAccepted={stats.monthlyAccepted}
+                monthlyRejected={stats.monthlyRejected}
               />
             </div>
 
@@ -126,9 +107,6 @@ export default function DashboardPage() {
             ?
           </button>
         </div>
-
-      </div>
-
-    </main>
+    </>
   );
 }

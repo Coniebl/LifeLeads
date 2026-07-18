@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   description: "Secure login for LifeLead client monitoring and tracking platform.",
 };
 
+import { AppLayoutClient } from "./AppLayoutClient";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable}`}>
       <body className="antialiased font-sans">
-        {children}
+        <AppLayoutClient>{children}</AppLayoutClient>
       </body>
     </html>
   );
