@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* Make Tailwind's `dark:` utilities react to the class controlled by the UI. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand-green: #1b5e3a;
+  --color-brand-gold: #f2a83b;
+  --color-brand-green-dark: #0f3d24;
+  --color-brand-cream: #faf8f2;
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-brand-cream);
+  color: #1f2937;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
