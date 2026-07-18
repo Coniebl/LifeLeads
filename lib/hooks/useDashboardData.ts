@@ -39,6 +39,9 @@ export function useDashboardData() {
     return false;
   });
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const [leadsType, setLeadsType] = useState("All Types");
+  const [rawRecords, setRawRecords] = useState<any[] | null>(null);
+  const [rawIndustries, setRawIndustries] = useState<any[] | null>(null);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -90,10 +93,43 @@ export function useDashboardData() {
           return;
         }
 
-        const records = contactsData ?? [];
-        const industryRecords = indData ?? [];
-        
-        const companies = new Map<string, { country: string; industries: Set<string>; leads: number; status: string; created_at?: string }>();
+        setRawRecords(contactsData ?? []);
+        setRawIndustries(indData ?? []);
+      } catch (err) {
+        console.error("Connection failed:", err);
+      }
+    };
+
+    if (!rawRecords) {
+      fetchSupabaseData();
+    }
+    
+    const handleUpdate = () => {
+      fetchSupabaseData();
+    };
+
+    window.addEventListener('companyStatusUpdated', handleUpdate);
+    return () => window.removeEventListener('companyStatusUpdated', handleUpdate);
+  }, [router, user, rawRecords]);
+
+  // Separate effect to process the data whenever raw data or filters change
+  useEffect(() => {
+    if (!rawRecords || !rawIndustries) return;
+
+    try {
+      // Apply Leads Type Filter
+      const records = rawRecords.filter(r => {
+        if (leadsType === "All Types") return true;
+        const name = (r.company_name || "").toLowerCase();
+        const isFilipino = name.includes("filipino") || name.includes("community") || name.includes("association") || name.includes("org") || name.includes("federation");
+        const category = r.category || (isFilipino ? "Filipino Community Organizations" : "Companies");
+        if (leadsType.includes("Filipino")) return category === "Filipino Community Organizations";
+        return category === "Companies";
+      });
+
+      const industryRecords = rawIndustries;
+      
+      const companies = new Map<string, { country: string; industries: Set<string>; leads: number; status: string; created_at?: string }>();
         const companyToGenIndustry = new Map<string, string>();
         
         industryRecords.forEach(ir => {
@@ -231,20 +267,10 @@ export function useDashboardData() {
           };
         });
         setIndustriesData(formattedIndustries);
-      } catch (err) {
-        console.error("Connection failed: defaulting to zero-value dashboard.", err);
-      }
-    };
-
-    fetchSupabaseData();
-
-    const handleUpdate = () => {
-      fetchSupabaseData();
-    };
-
-    window.addEventListener('companyStatusUpdated', handleUpdate);
-    return () => window.removeEventListener('companyStatusUpdated', handleUpdate);
-  }, [router, user]);
+    } catch (err) {
+      console.error("Data processing failed:", err);
+    }
+  }, [rawRecords, rawIndustries, leadsType]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -263,6 +289,8 @@ export function useDashboardData() {
     setActiveTab,
     handleLogout,
     availableFiles,
-    allCompanyNames
+    allCompanyNames,
+    leadsType,
+    setLeadsType,
   };
 }

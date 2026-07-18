@@ -8,6 +8,7 @@ import { CountryChart } from "../../components/dashboard/CountryChart";
 
 import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
 import { MonthlyOffersChart } from "../../components/dashboard/MonthlyOffersChart";
+import { DashboardGreetingCard } from "../../components/dashboard/DashboardGreetingCard";
 
 export default function DashboardPage() {
   const {
@@ -15,7 +16,9 @@ export default function DashboardPage() {
     countriesData,
     industriesData,
     availableFiles,
-    allCompanyNames
+    allCompanyNames,
+    leadsType,
+    setLeadsType,
   } = useDashboardContext();
 
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -62,6 +65,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Dashboard Greeting Card */}
+        <DashboardGreetingCard />
+
         {/* Dashboard Header: Search and Filter */}
         <DashboardHeader 
           searchQuery={searchQuery} 
@@ -70,6 +76,8 @@ export default function DashboardPage() {
           setSelectedFile={setSelectedFile}
           availableFiles={availableFiles}
           allCompanyNames={allCompanyNames}
+          leadsType={leadsType}
+          setLeadsType={setLeadsType}
         />
 
         {/* Layout Grid */}

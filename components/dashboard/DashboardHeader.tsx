@@ -1,5 +1,4 @@
 import React from "react";
-
 import { useRouter } from "next/navigation";
 
 interface DashboardHeaderProps {
@@ -9,6 +8,8 @@ interface DashboardHeaderProps {
   setSelectedFile: (val: string) => void;
   availableFiles: string[];
   allCompanyNames: string[];
+  leadsType?: string;
+  setLeadsType?: (val: string) => void;
 }
 
 export function DashboardHeader({
@@ -18,6 +19,8 @@ export function DashboardHeader({
   setSelectedFile,
   availableFiles,
   allCompanyNames,
+  leadsType = "All Types",
+  setLeadsType = () => {},
 }: DashboardHeaderProps) {
   const router = useRouter();
   const [showSuggestions, setShowSuggestions] = React.useState(false);
@@ -52,9 +55,9 @@ export function DashboardHeader({
     <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full mb-6">
       {/* Search Bar */}
       <div className="relative w-full flex-1" ref={wrapperRef}>
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
         </div>
         <input
@@ -67,7 +70,7 @@ export function DashboardHeader({
           onFocus={() => setShowSuggestions(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search companies globally..."
-          className="relative w-full pl-11 pr-4 py-3 bg-white dark:bg-[#181512] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all placeholder-gray-400 z-10"
+          className="relative w-full pl-12 pr-4 py-3 bg-white dark:bg-[#181512] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all placeholder-gray-400 z-10"
         />
         
         {/* Dropdown Suggestions */}
@@ -93,27 +96,54 @@ export function DashboardHeader({
         )}
       </div>
 
-      {/* Dropdown Filter */}
-      <div className="relative w-full md:w-64">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg className="h-4 w-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+      {/* Dropdown Filters */}
+      <div className="flex gap-4 w-full md:w-auto">
+        
+        {/* Leads Type Filter */}
+        <div className="relative w-full md:w-56">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-4 w-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <select
+            value={leadsType}
+            onChange={(e) => setLeadsType(e.target.value)}
+            className="w-full pl-10 pr-10 py-3 bg-white dark:bg-[#181512] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all appearance-none cursor-pointer"
+          >
+            <option value="All Types">All Types</option>
+            <option value="Companies">Companies</option>
+            <option value="Filipino Community Organizations">Filipino Community Orgs</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
-        <select
-          value={selectedFile}
-          onChange={(e) => setSelectedFile(e.target.value)}
-          className="w-full pl-10 pr-8 py-3 bg-white dark:bg-[#181512] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 appearance-none focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all cursor-pointer"
-        >
-          <option value="All Files">All Files</option>
-          {availableFiles.map(file => (
-            <option key={file} value={file}>{file}</option>
-          ))}
-        </select>
-        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-          </svg>
+
+        {/* File Dropdown Filter */}
+        <div className="relative w-full md:w-64">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-4 w-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <select
+            value={selectedFile}
+            onChange={(e) => setSelectedFile(e.target.value)}
+            className="w-full pl-10 pr-8 py-3 bg-white dark:bg-[#181512] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 appearance-none focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all cursor-pointer"
+          >
+            <option value="All Files">All Files</option>
+            {availableFiles.map(file => (
+              <option key={file} value={file}>{file}</option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
