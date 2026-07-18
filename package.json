@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --env-file=.env.local scripts/db-setup.js && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -13,7 +13,8 @@
     "@supabase/supabase-js": "^2.110.7",
     "next": "16.2.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
