@@ -265,7 +265,7 @@ export default function RecordsPage() {
 
           {/* Import section with Subcategory Dropdown right next to file name/before import button */}
           <div className="flex flex-wrap items-center gap-3 mt-2 xl:mt-0 p-2 bg-white/60 dark:bg-[#14120e]/60 rounded-2xl border border-gray-100 dark:border-white/5 shadow-xs">
-            <span className="text-xs font-black text-[#133020] dark:text-gray-300 ml-2 uppercase tracking-wider hidden sm:inline">
+            <span className="text-sm font-bold text-[#133020] dark:text-gray-300 ml-2 uppercase tracking-wider hidden sm:inline">
               Import Category:
             </span>
             <div className="relative z-50">
@@ -276,10 +276,10 @@ export default function RecordsPage() {
                   { label: "Companies", value: "Companies" },
                   { label: "Filipino Community Organizations", value: "Filipino Community Organizations" }
                 ]}
-                className="px-4 py-2.5 rounded-xl text-xs font-black bg-[#f5eedb] dark:bg-[#1c1915] text-[#133020] dark:text-[#ffb347] border border-[#046241]/20 dark:border-white/10 hover:bg-[#ebdcae] dark:hover:bg-[#2a261f] focus:outline-none cursor-pointer shadow-sm transition-colors flex items-center justify-between gap-3 min-w-[140px]"
+                className="px-4 py-2.5 rounded-xl text-sm font-bold bg-[#f5eedb] dark:bg-[#1c1915] text-[#133020] dark:text-[#ffb347] border border-[#046241]/20 dark:border-white/10 hover:bg-[#ebdcae] dark:hover:bg-[#2a261f] focus:outline-none cursor-pointer shadow-sm transition-colors flex items-center justify-between gap-3 min-w-[140px]"
                 dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[280px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200"
-                optionClassName="w-full text-left px-4 py-3 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-white/5 transition-colors"
-                activeOptionClassName="w-full text-left px-4 py-3 text-xs font-black bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+                optionClassName="w-full text-left px-4 py-3 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-white/5 transition-colors"
+                activeOptionClassName="w-full text-left px-4 py-3 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
               />
             </div>
 
@@ -293,7 +293,7 @@ export default function RecordsPage() {
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={isImporting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#046241] hover:bg-[#034d33] text-white rounded-xl text-xs font-black shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 px-6 py-3 bg-[#046241] hover:bg-[#034d33] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
