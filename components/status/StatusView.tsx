@@ -265,7 +265,8 @@ export function StatusView({
       {/* Tabulated Display */}
       <div className="flex-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden flex flex-col min-h-[360px]">
         {/* Table Header */}
-        <div className="grid grid-cols-[auto_2fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-6 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+        <div className="grid grid-cols-[40px_auto_2fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-6 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+          <div>No.</div>
           <div className="w-10"></div>
           <div>Name / Organization</div>
           <div>Contact Person</div>
@@ -281,8 +282,13 @@ export function StatusView({
               <div
                 key={i}
                 onClick={() => setSelectedCompany(company)}
-                className="grid grid-cols-[auto_2fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-4 py-3.5 rounded-xl hover:bg-[#046241]/5 dark:hover:bg-white/5 transition-all group cursor-pointer border border-transparent hover:border-[#046241]/20 dark:hover:border-white/10"
+                className="grid grid-cols-[40px_auto_2fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-4 py-3.5 rounded-xl hover:bg-[#046241]/5 dark:hover:bg-white/5 transition-all group cursor-pointer border border-transparent hover:border-[#046241]/20 dark:hover:border-white/10"
               >
+                {/* Number */}
+                <div className="text-sm font-bold text-gray-400 dark:text-gray-500 pl-2">
+                  {i + 1}
+                </div>
+
                 {/* Icon */}
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-black shadow-inner flex-shrink-0 ${getIconColor(company.status)}`}>
                   {getInitials(company.name)}
