@@ -23,6 +23,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   const [isComposingEmail, setIsComposingEmail] = useState(false);
   const [hasSentEmail, setHasSentEmail] = useState(false);
   const [emailBody, setEmailBody] = useState("");
+  const [showEmailProviders, setShowEmailProviders] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -36,6 +38,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
       setIsComposingEmail(false);
       setHasSentEmail(false);
       setEmailBody("");
+      setShowEmailProviders(false);
+      setSelectedTemplate(null);
     }
   }, [selectedCompany?.name]);
 
@@ -76,15 +80,16 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   // Handle generating email templates
   const handleTemplateClick = (templateType: "Introduction" | "Partnerships" | "Follow Ups") => {
     if (!selectedCompany) return;
+    setSelectedTemplate(templateType);
     const name = selectedCompany.name;
     const contact = selectedCompany.contactPerson ? `Dear ${selectedCompany.contactPerson},\n\n` : `Dear ${name} Team,\n\n`;
 
     if (templateType === "Introduction") {
-      setEmailBody(`${contact}I hope this message finds you well.\n\nI am reaching out from LifeLeads to introduce our specialized lead management and client onboarding platform. We have been following ${name}'s impactful work across ${selectedCompany.country} and believe our collaborative services could provide significant value to your upcoming initiatives.\n\nWe would welcome the opportunity for a brief introductory call to share how we can support your goals.\n\nWarm regards,\nLifeLeads Administrator\npowered by Lifewood PH`);
+      setEmailBody(`${contact}I hope this message finds you well.\n\nI am reaching out to formally introduce you to our company, Lifewood Data Technology, and the services that we offer to other companies and organizations globally. We offer global data engineering, processing, and AI training services that helps our clients.\n\n We have been following ${name}'s impactful work across ${selectedCompany.country} and believe our collaborative services could provide significant value to your upcoming initiatives.\n\nWe would welcome the opportunity for a brief introductory call to share how we can support your goals.\n\nBest regards,\nLifewood PH Team`);
     } else if (templateType === "Partnerships") {
-      setEmailBody(`${contact}We have been closely admiring ${name}'s leadership in the ${selectedCompany.industries[0] || "business"} sector. At LifeLeads, we actively partner with premier organizations to streamline regional expansion and strategic outreach.\n\nWe would love to explore potential partnership opportunities between our teams that align with your long-term vision.\n\nBest regards,\nLifeLeads Partnership Team\npowered by Lifewood PH`);
+      setEmailBody(`${contact}We have been closely admiring ${name}'s leadership in the ${selectedCompany.industries[0] || "business"} sector. At Lifewood Data Technology, we actively partner with premier organizations to streamline regional expansion and strategic outreach.\n\nWe would love to explore potential partnership opportunities between our teams that align with your long-term vision.\n\nBest regards,\nLifewood PH Team`);
     } else if (templateType === "Follow Ups") {
-      setEmailBody(`${contact}I am following up on our previous communication regarding potential collaboration with LifeLeads. We remain very eager to connect with ${name} and explore tailored solutions for your organization.\n\nPlease let us know when you might have 15 minutes available for a brief discussion.\n\nSincerely,\nLifeLeads Team\npowered by Lifewood PH`);
+      setEmailBody(`${contact}I am following up on our previous communication regarding potential collaboration with LifeLeads. We remain very eager to connect with ${name} and explore tailored solutions for your organization.\n\nPlease let us know when you might have 15 minutes available for a brief discussion.\n\nSincerely,\nLifewood PH Team`);
     }
   };
 
@@ -97,14 +102,39 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     showToast("Extracted & copied email text to clipboard!");
   };
 
-  const handleSendEmail = () => {
-    if (!emailBody.trim()) {
-      showToast("Please select a template or write an email first.");
-      return;
-    }
+  const handleProviderSend = (provider: "gmail" | "outlook" | "yahoo" | "default") => {
     setHasSentEmail(true);
-    showToast(`Email sent to ${selectedCompany?.email || selectedCompany?.name}! Process button is now unlocked.`);
+
+    const recipient = selectedCompany?.email || "";
+    const subject = encodeURIComponent(`Connection Request - ${selectedCompany?.name}`);
+    const body = encodeURIComponent(emailBody);
+
+    let url = "";
+
+    switch (provider) {
+      case "gmail":
+        url = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipient}&su=${subject}&body=${body}`;
+        break;
+      case "outlook":
+        url = `https://outlook.live.com/mail/0/deeplink/compose?to=${recipient}&subject=${subject}&body=${body}`;
+        break;
+      case "yahoo":
+        url = `https://compose.mail.yahoo.com/?to=${recipient}&subject=${subject}&body=${body}`;
+        break;
+      case "default":
+      default:
+        url = `mailto:${recipient}?subject=${subject}&body=${body}`;
+        break;
+    }
+
+    if (provider === "default") {
+      window.location.href = url;
+    } else {
+      window.open(url, "_blank");
+    }
+
     setIsComposingEmail(false);
+    setShowEmailProviders(false);
   };
 
   const handleManualContact = () => {
@@ -380,7 +410,11 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                       <button
                         key={tmpl}
                         onClick={() => handleTemplateClick(tmpl)}
-                        className="py-2 px-2.5 rounded-xl bg-[#046241]/10 dark:bg-white/10 hover:bg-[#046241] hover:text-white text-[11px] font-bold text-[#046241] dark:text-gray-200 transition-all text-center shadow-xs"
+                        className={`py-2 px-2.5 rounded-xl text-[11px] font-bold transition-all text-center shadow-xs ${
+                          selectedTemplate === tmpl
+                            ? "bg-[#046241] text-white"
+                            : "bg-[#046241]/10 dark:bg-white/10 hover:bg-[#046241]/20 text-[#046241] dark:text-gray-200"
+                        }`}
                       >
                         {tmpl}
                       </button>
@@ -403,27 +437,80 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 </div>
 
                 {/* Bottom Actions: Extract Text on Left, Send on Right */}
-                <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
-                  <button
-                    onClick={handleCopyExtract}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-xs font-bold text-gray-700 dark:text-gray-200 transition-all"
-                    title="Extract and copy text to clipboard"
-                  >
-                    <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-                    </svg>
-                    Extract Text
-                  </button>
-
-                  <button
-                    onClick={handleSendEmail}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#046241] to-[#ffb347] text-white font-black text-xs shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all"
-                  >
-                    Send Mail
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                    </svg>
-                  </button>
+                <div className="flex flex-col gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                  {showEmailProviders ? (
+                    <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
+                        Select Email Platform
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button
+                          onClick={() => handleProviderSend("gmail")}
+                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 text-xs font-bold transition-colors"
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 8.414l8.073-4.921c1.618-1.214 3.927-.059 3.927 1.964Z"/></svg>
+                          Gmail
+                        </button>
+                        <button
+                          onClick={() => handleProviderSend("outlook")}
+                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 text-xs font-bold transition-colors"
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M1.38 6.55L14 2.76v18.42L1.38 17.45V6.55zM15 4.3v15.4h7.62V4.3H15zm2.86 10.93c-1.16 0-2.04-.9-2.04-2.12 0-1.23.88-2.13 2.04-2.13 1.15 0 2.03.9 2.03 2.13 0 1.22-.88 2.12-2.03 2.12zm0-1c.54 0 .9-.45.9-1.12 0-.66-.36-1.12-.9-1.12-.53 0-.9.46-.9 1.12 0 .67.37 1.12.9 1.12z" /></svg>
+                          Outlook
+                        </button>
+                        <button
+                          onClick={() => handleProviderSend("yahoo")}
+                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:hover:bg-purple-500/20 text-xs font-bold transition-colors"
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22.46 5.56L13.88 18.2v5.8h-3.76v-5.8L1.54 5.56h4.15l6.32 10.3 6.32-10.3h4.13z"/></svg>
+                          Yahoo
+                        </button>
+                        <button
+                          onClick={() => handleProviderSend("default")}
+                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20 text-xs font-bold transition-colors"
+                          title="Apple Mail, Teams, or System Default"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                          Default App
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setShowEmailProviders(false)}
+                        className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-center mt-1 transition-colors uppercase tracking-wider"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3">
+                      <button
+                        onClick={handleCopyExtract}
+                        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-xs font-bold text-gray-700 dark:text-gray-200 transition-all"
+                        title="Extract and copy text to clipboard"
+                      >
+                        <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                        </svg>
+                        Extract Text
+                      </button>
+  
+                      <button
+                        onClick={() => {
+                          if (!emailBody.trim()) {
+                            showToast("Please select a template or write an email first.");
+                            return;
+                          }
+                          setShowEmailProviders(true);
+                        }}
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#046241] to-[#ffb347] text-white font-black text-xs shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        Send Mail
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -495,7 +582,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                   {/* Social / Web Links */}
                   <div className="flex items-center gap-3 pt-2">
                     {selectedCompany.linkedin ? (
-                      <a href={selectedCompany.linkedin} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#0a66c2]/10 hover:bg-[#0a66c2]/20 text-[#0a66c2] dark:text-[#60a5fa] py-3 rounded-xl font-bold text-xs transition-colors">
+                      <a href={selectedCompany.linkedin.startsWith("http") ? selectedCompany.linkedin : `https://${selectedCompany.linkedin}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#0a66c2]/10 hover:bg-[#0a66c2]/20 text-[#0a66c2] dark:text-[#60a5fa] py-3 rounded-xl font-bold text-xs transition-colors">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                         </svg>
@@ -507,7 +594,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                       </div>
                     )}
                     {selectedCompany.website ? (
-                      <a href={selectedCompany.website} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-bold text-xs transition-colors">
+                      <a href={selectedCompany.website.startsWith("http") ? selectedCompany.website : `https://${selectedCompany.website}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-bold text-xs transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
                         </svg>
