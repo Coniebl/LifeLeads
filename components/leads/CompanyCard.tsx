@@ -1,6 +1,7 @@
 import React from "react";
 
 export type CompanyData = {
+  id: string;
   name: string;
   country: string;
   industries: string[];

@@ -191,18 +191,18 @@ export function StatusView({
           status: newStatus,
           status_updated_at: new Date().toISOString()
         })
-        .eq('company_name', selectedCompany.name);
+        .eq('id', selectedCompany.id);
 
       if (error) {
         console.error("Status update error:", error);
       }
 
       if (setCompanies) {
-        setCompanies(prev => prev.map(item => item.name === selectedCompany.name ? { ...item, status: newStatus } : item));
+        setCompanies(prev => prev.map(item => item.id === selectedCompany.id ? { ...item, status: newStatus } : item));
       }
 
       window.dispatchEvent(new CustomEvent('companyStatusUpdated', {
-        detail: { companyName: selectedCompany.name, status: newStatus }
+        detail: { companyId: selectedCompany.id, status: newStatus }
       }));
 
       showToast(`Status changed to ${newStatus} for ${selectedCompany.name}!`);
