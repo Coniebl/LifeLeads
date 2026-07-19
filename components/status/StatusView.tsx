@@ -187,7 +187,10 @@ export function StatusView({
       const { supabase } = await import("../../lib/supabase/client");
       const { error } = await supabase
         .from('company_contacts')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          status_updated_at: new Date().toISOString()
+        })
         .eq('company_name', selectedCompany.name);
 
       if (error) {
