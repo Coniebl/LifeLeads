@@ -34,7 +34,7 @@ export function CompanyCard({ company, onClick }: { company: CompanyData; onClic
   const charCodeSum = company.name.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
   const bgColor = bgColors[charCodeSum % bgColors.length];
 
-  const joinDate = "Jan 2025";
+  const joinDate = company.updatedAt || "No Date";
   const countryCode = company.country.substring(0, 2).toUpperCase();
 
   return (

@@ -78,7 +78,7 @@ export default function CompaniesPage() {
               source: r.source_file,
               category: inferredCat,
               status: r.status || "Not Active",
-              updatedAt: new Date(r.created_at || Date.now()).toLocaleDateString()
+              updatedAt: new Date(r.created_at || Date.now()).toLocaleDateString('en-GB')
             });
           } else {
              const c = companyMap.get(name)!;

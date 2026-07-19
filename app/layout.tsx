@@ -9,7 +9,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "LifeLead - Secure Client Monitoring Portal",
+  title: "LifeLeads",
   description: "Secure login for LifeLead client monitoring and tracking platform.",
 };
 

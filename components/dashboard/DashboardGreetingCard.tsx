@@ -4,12 +4,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useDashboardContext } from "../../lib/contexts/DashboardContext";
 
 export function DashboardGreetingCard() {
-  const { rawRecords } = useDashboardContext();
+  const { rawRecords, user } = useDashboardContext();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [sessionDuration, setSessionDuration] = useState<number>(0);
+  const [isGlitching, setIsGlitching] = useState(false);
 
   const [displayYear, setDisplayYear] = useState<number | null>(null);
   const [displayMonth, setDisplayMonth] = useState<number | null>(null);
+  const [localExports, setLocalExports] = useState<any[]>([]);
 
   useEffect(() => {
     const now = new Date();
@@ -18,49 +20,85 @@ export function DashboardGreetingCard() {
     setDisplayMonth(now.getMonth());
 
     // Session tracking
-    const sessionStartStr = sessionStorage.getItem("sessionStart");
-    let startTime: number;
-    if (sessionStartStr) {
-      startTime = parseInt(sessionStartStr, 10);
-    } else {
-      startTime = Date.now();
-      sessionStorage.setItem("sessionStart", startTime.toString());
+    const getLocalDayStr = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const todayStr = getLocalDayStr(new Date());
+    let savedDate = localStorage.getItem("lifelead_session_date");
+    let currentDuration = parseInt(localStorage.getItem("lifelead_session_duration") || "0", 10);
+
+    if (savedDate !== todayStr) {
+      currentDuration = 0;
+      localStorage.setItem("lifelead_session_date", todayStr);
+      localStorage.setItem("lifelead_session_duration", "0");
     }
+    
+    setSessionDuration(currentDuration);
 
     const interval = setInterval(() => {
       const current = new Date();
       setCurrentTime(current);
-      setSessionDuration(Math.floor((current.getTime() - startTime) / 1000));
+      
+      const currentDayStr = getLocalDayStr(current);
+      if (localStorage.getItem("lifelead_session_date") !== currentDayStr) {
+        currentDuration = 0;
+        localStorage.setItem("lifelead_session_date", currentDayStr);
+      }
+      
+      currentDuration += 1;
+      localStorage.setItem("lifelead_session_duration", currentDuration.toString());
+      setSessionDuration(currentDuration);
     }, 1000);
 
-    return () => clearInterval(interval);
+    const loadExports = () => {
+      try {
+        setLocalExports(JSON.parse(localStorage.getItem('lifelead_exports') || '[]'));
+      } catch (e) {}
+    };
+    loadExports();
+    window.addEventListener('lifelead_export', loadExports);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('lifelead_export', loadExports);
+    };
   }, []);
 
   const calendarEvents = useMemo(() => {
     if (!rawRecords || displayYear === null || displayMonth === null) return {};
     
-    const events: Record<number, { companies: boolean, fcos: boolean }> = {};
+    const events: Record<number, { imports: { companies: number, fcos: number }, exports: { companies: number, fcos: number } }> = {};
     
     rawRecords.forEach(r => {
       if (!r.created_at) return;
       const date = new Date(r.created_at);
       if (date.getFullYear() === displayYear && date.getMonth() === displayMonth) {
         const day = date.getDate();
-        if (!events[day]) events[day] = { companies: false, fcos: false };
+        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 } };
         
-        const name = (r.company_name || "").toLowerCase();
-        const isFilipino = name.includes("filipino") || name.includes("community") || name.includes("association") || name.includes("org") || name.includes("federation");
-        const category = r.category || (isFilipino ? "Filipino Community Organizations" : "Companies");
-        
+        const category = r.category || "Companies";
         if (category === "Filipino Community Organizations") {
-          events[day].fcos = true;
+          events[day].imports.fcos += 1;
         } else {
-          events[day].companies = true;
+          events[day].imports.companies += 1;
         }
       }
     });
+
+    localExports.forEach((ex: any) => {
+      const date = new Date(ex.date);
+      if (date.getFullYear() === displayYear && date.getMonth() === displayMonth) {
+        const day = date.getDate();
+        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 } };
+
+        if (ex.category === "Filipino Community Organizations") {
+          events[day].exports.fcos += ex.count;
+        } else {
+          events[day].exports.companies += ex.count;
+        }
+      }
+    });
+
     return events;
-  }, [rawRecords, displayYear, displayMonth]);
+  }, [rawRecords, displayYear, displayMonth, localExports]);
 
   if (!currentTime || displayMonth === null || displayYear === null) return null; // Avoid hydration mismatch
 
@@ -111,6 +149,8 @@ export function DashboardGreetingCard() {
     }
   };
 
+  const firstName = user?.name ? user.name.split(' ')[0] : "Admin";
+
   return (
     <div className="relative w-full rounded-[32px] overflow-hidden bg-black text-white shadow-2xl mb-8 min-h-[360px] flex items-center dark:border dark:border-[#046241] dark:shadow-[0_0_20px_rgba(4,98,65,0.6)]">
       {/* Background Video */}
@@ -137,11 +177,27 @@ export function DashboardGreetingCard() {
           
           <h2 className="text-5xl md:text-6xl font-black tracking-tight leading-tight mb-2">
             {greeting},<br/>
-            <span className="text-[#ccff00]">Admin.</span>
+            <span 
+              className="inline-block relative cursor-pointer text-[#ccff00]"
+              onMouseEnter={() => setIsGlitching(true)}
+              onMouseLeave={() => setIsGlitching(false)}
+            >
+              <span 
+                className={`glitch-idle-active ${isGlitching ? "opacity-0" : "opacity-100 transition-opacity duration-200"}`}
+                data-text="Admin."
+              >
+                Admin.
+              </span>
+              {isGlitching && (
+                <span className="absolute top-0 left-0 pointer-events-none whitespace-nowrap z-10">
+                  <span className="glitch-active inline-block" data-text={`${firstName}.`}>{firstName}.</span>
+                </span>
+              )}
+            </span>
           </h2>
           
           <p className="text-gray-300 font-medium text-lg mb-8 max-w-md">
-            Ready to track today's progress and manage your leads?
+            Ready to track Lifewood's potential clients and secure partnerships?
           </p>
 
           <div className="flex items-center gap-8 border-t border-white/10 pt-6 mt-auto">
@@ -185,21 +241,35 @@ export function DashboardGreetingCard() {
               const isToday = day === todayDate && displayMonth === todayMonth && displayYear === todayYear;
               
               return (
-                <div key={idx} className="relative flex items-center justify-center h-8">
+                <div key={idx} className="relative flex items-center justify-center h-8 group cursor-default">
                   {day && (
-                    <span className={`w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg ${
+                    <span className={`w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg transition-colors ${
                       isToday 
-                        ? 'border border-[#ccff00] text-[#ccff00] bg-[#ccff00]/10' 
-                        : 'text-gray-300'
+                        ? 'border border-[#ccff00] text-[#ccff00] bg-[#ccff00]/10 hover:bg-[#ccff00]/20' 
+                        : 'text-gray-300 hover:bg-white/5'
                     }`}>
                       {day}
                     </span>
                   )}
+                  {/* Hover Tooltip */}
+                  {day && calendarEvents[day] && (
+                    <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col z-50 min-w-[140px] p-2.5 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl text-left pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-white/10 pb-1.5 mb-1.5">
+                        {monthNames[displayMonth]} {day}, {displayYear}
+                      </p>
+                      {calendarEvents[day].imports.companies > 0 && <div className="text-xs font-bold text-[#ccff00]">+ {calendarEvents[day].imports.companies} Companies Imp.</div>}
+                      {calendarEvents[day].imports.fcos > 0 && <div className="text-xs font-bold text-[#ffb347]">+ {calendarEvents[day].imports.fcos} Orgs Imp.</div>}
+                      {calendarEvents[day].exports.companies > 0 && <div className="text-xs font-bold text-[#3b82f6]">- {calendarEvents[day].exports.companies} Companies Exp.</div>}
+                      {calendarEvents[day].exports.fcos > 0 && <div className="text-xs font-bold text-[#ec4899]">- {calendarEvents[day].exports.fcos} Orgs Exp.</div>}
+                    </div>
+                  )}
                   {/* Decorative dots from data */}
                   {day && calendarEvents[day] && (
-                    <div className="absolute -bottom-1 flex gap-0.5">
-                      {calendarEvents[day].companies && <span className="w-1 h-1 rounded-full bg-[#ccff00]"></span>}
-                      {calendarEvents[day].fcos && <span className="w-1 h-1 rounded-full bg-[#ffb347]"></span>}
+                    <div className="absolute -bottom-1 flex flex-wrap justify-center gap-0.5 px-1 w-full pointer-events-none">
+                      {calendarEvents[day].imports.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#ccff00]"></span>}
+                      {calendarEvents[day].imports.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ffb347]"></span>}
+                      {calendarEvents[day].exports.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#3b82f6]"></span>}
+                      {calendarEvents[day].exports.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ec4899]"></span>}
                     </div>
                   )}
                 </div>
@@ -207,14 +277,26 @@ export function DashboardGreetingCard() {
             })}
           </div>
 
-          <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/10">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Companies</span>
+          <div className="flex flex-col gap-y-2 mt-6 pt-4 border-t border-white/10">
+            <div className="flex flex-wrap items-center gap-x-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Companies</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Orgs</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Community Orgs</span>
+            <div className="flex flex-wrap items-center gap-x-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"></span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Exp. Companies</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ec4899]"></span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Exp. Orgs</span>
+              </div>
             </div>
           </div>
         </div>

@@ -121,6 +121,21 @@ export function StatusView({
 
     const safeTitle = selectedSubCategory.replace(/[\/\?\*\[\]:]/g, "_").substring(0, 31);
     xlsx.writeFile(wb, `LifeLeads_Status_All_${safeTitle}.xlsx`);
+    
+    // Log export to localStorage for the Dashboard Calendar to track
+    try {
+      const storedExports = JSON.parse(localStorage.getItem('lifelead_exports') || '[]');
+      storedExports.push({
+        date: new Date().toISOString(),
+        category: selectedSubCategory,
+        count: filteredCompanies.length
+      });
+      localStorage.setItem('lifelead_exports', JSON.stringify(storedExports));
+      window.dispatchEvent(new Event('lifelead_export'));
+    } catch (e) {
+      console.error("Failed to log export", e);
+    }
+    
     showToast(`Exported ${filteredCompanies.length} records across 4 sheets!`);
   };
 
