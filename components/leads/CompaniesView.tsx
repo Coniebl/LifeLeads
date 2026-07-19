@@ -150,7 +150,10 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     }
 
     // Update status to Pending so it moves to Status tab
-    await supabase.from('company_contacts').update({ status: 'Pending' }).eq('company_name', selectedCompany.name);
+    await supabase.from('company_contacts').update({ 
+      status: 'Pending',
+      status_updated_at: new Date().toISOString()
+    }).eq('company_name', selectedCompany.name);
     
     // Update local state
     setCompanies(prev => prev.map(c => c.name === selectedCompany.name ? { ...c, status: "Pending" } : c));
