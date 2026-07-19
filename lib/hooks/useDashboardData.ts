@@ -39,7 +39,7 @@ export function useDashboardData() {
     return false;
   });
   const [activeTab, setActiveTab] = useState("Dashboard");
-  const [leadsType, setLeadsType] = useState("All Types");
+  const [leadsType, setLeadsType] = useState("All Leads");
   const [rawRecords, setRawRecords] = useState<any[] | null>(null);
   const [rawIndustries, setRawIndustries] = useState<any[] | null>(null);
 
@@ -119,7 +119,7 @@ export function useDashboardData() {
     try {
       // Apply Leads Type Filter
       const records = rawRecords.filter(r => {
-        if (leadsType === "All Types") return true;
+        if (leadsType === "All Leads") return true;
         const category = r.category || "Companies";
         if (leadsType.includes("Filipino")) return category === "Filipino Community Organizations";
         return category === "Companies";

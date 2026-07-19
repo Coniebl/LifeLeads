@@ -20,7 +20,7 @@ export function DashboardHeader({
   setSelectedFile,
   availableFiles,
   allCompanyNames,
-  leadsType = "All Types",
+  leadsType = "All Leads",
   setLeadsType = () => {},
 }: DashboardHeaderProps) {
   const router = useRouter();
@@ -106,7 +106,7 @@ export function DashboardHeader({
             value={leadsType}
             onChange={(val) => setLeadsType(val)}
             options={[
-              { label: "All Types", value: "All Types" },
+              { label: "All Leads", value: "All Leads" },
               { label: "Companies", value: "Companies" },
               { label: "Filipino Community Orgs", value: "Filipino Community Organizations" }
             ]}

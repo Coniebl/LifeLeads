@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { type CompanyData } from "../leads/CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
-import * as xlsx from "xlsx";
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 export function StatusView({ 
   companies, 
@@ -85,8 +86,8 @@ export function StatusView({
     }
   };
 
-  const handleExport = () => {
-    const wb = xlsx.utils.book_new();
+  const handleExport = async () => {
+    const wb = new ExcelJS.Workbook();
     
     const generateExportData = (companies: typeof filteredCompanies) => {
       return companies.map(c => ({
@@ -105,22 +106,62 @@ export function StatusView({
       }));
     };
 
+    const allData = generateExportData(filteredCompanies);
     const notActiveData = generateExportData(filteredCompanies.filter(c => !c.status || c.status === "Not Active"));
     const pendingData = generateExportData(filteredCompanies.filter(c => c.status === "Pending"));
     const acceptedData = generateExportData(filteredCompanies.filter(c => c.status === "Accepted"));
     const rejectedData = generateExportData(filteredCompanies.filter(c => c.status === "Rejected"));
 
-    if (notActiveData.length > 0) xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(notActiveData), "Not Active");
-    if (pendingData.length > 0) xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(pendingData), "Pending");
-    if (acceptedData.length > 0) xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(acceptedData), "Accepted");
-    if (rejectedData.length > 0) xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(rejectedData), "Rejected");
+    const addSheet = (data: any[], name: string, tabColor: string) => {
+      const ws = wb.addWorksheet(name);
+      ws.properties.tabColor = { argb: tabColor };
+      
+      // If data is empty, we still want headers
+      const displayData = data.length > 0 ? data : [{
+        "Company Name": "", "Contact Person": "", "Designation": "", 
+        "Contact Number": "", "Email": "", "Industry": "", "Country": "", 
+        "Status": "", "Source File": "", "Joined/Updated": "", 
+        "LinkedIn": "", "Website": ""
+      }];
+      
+      const headers = Object.keys(displayData[0]);
+      ws.columns = headers.map(h => ({ header: h, key: h, width: 20 }));
+      
+      if (data.length > 0) {
+        ws.addRows(data);
+      } else {
+        // Add an empty row just to get headers formatted properly
+        ws.addRow(headers.reduce((acc, h) => ({...acc, [h]: ""}), {}));
+      }
+      
+      ws.getRow(1).eachCell(cell => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF046241' }
+        };
+        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+        cell.alignment = { horizontal: 'center' };
+      });
+      
+      ws.columns.forEach(col => {
+        let maxLen = 0;
+        col.eachCell!({ includeEmpty: true }, cell => {
+          maxLen = Math.max(maxLen, cell.value ? cell.value.toString().length : 0);
+        });
+        col.width = Math.min(Math.max(maxLen + 2, 10), 50);
+      });
+    };
 
-    if (filteredCompanies.length === 0) {
-      xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet([]), "Empty");
-    }
+    addSheet(allData, "All", "FF046241"); // Lifewood Green
+    addSheet(notActiveData, "Not Active", "FF9CA3AF"); // Gray
+    addSheet(pendingData, "Pending", "FFF59E0B"); // Orange
+    addSheet(acceptedData, "Accepted", "FF10B981"); // Bright Green
+    addSheet(rejectedData, "Rejected", "FFEF4444"); // Red
 
     const safeTitle = selectedSubCategory.replace(/[\/\?\*\[\]:]/g, "_").substring(0, 31);
-    xlsx.writeFile(wb, `LifeLeads_Status_All_${safeTitle}.xlsx`);
+    const buffer = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `LifeLeads_Status_All_${safeTitle}.xlsx`);
     
     // Log export to localStorage for the Dashboard Calendar to track
     try {
@@ -136,7 +177,7 @@ export function StatusView({
       console.error("Failed to log export", e);
     }
     
-    showToast(`Exported ${filteredCompanies.length} records across 4 sheets!`);
+    showToast(`Exported ${filteredCompanies.length} records across 5 sheets!`);
   };
 
   const handleUpdateStatus = async (newStatus: "Accepted" | "Rejected") => {
@@ -200,7 +241,7 @@ export function StatusView({
           {/* Export Data Button right beside top header */}
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#ffb347] hover:bg-[#ffa726] text-[#133020] font-bold rounded-xl shadow-md shadow-[#ffb347]/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-6 py-3 bg-[#ffb347] hover:bg-[#ffa726] text-[#133020] text-sm font-bold rounded-xl shadow-md shadow-[#ffb347]/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
