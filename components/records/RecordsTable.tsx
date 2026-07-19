@@ -172,6 +172,7 @@ export function RecordsTable({ records }: RecordsTableProps) {
         <table className="w-full text-left border-collapse min-w-[1250px]">
           <thead>
             <tr className="bg-[#f5eedb]/60 dark:bg-white/5 border-b border-gray-100 dark:border-white/5">
+              <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">No.</th>
               <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
                 <div 
                   className="flex items-center cursor-pointer group select-none hover:text-[#133020] dark:hover:text-white transition-colors"
@@ -204,6 +205,7 @@ export function RecordsTable({ records }: RecordsTableProps) {
               </th>
               <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Contact Person</th>
               <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Phone</th>
+              <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Links</th>
               <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
                 <div className="flex items-center">
                   Status
@@ -216,19 +218,21 @@ export function RecordsTable({ records }: RecordsTableProps) {
                   <FilterDropdown columnKey="dateAdded" label="Date" options={uniqueDates} />
                 </div>
               </th>
-              <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Links</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-white/5">
             {paginatedRecords.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-16 text-center text-sm font-bold text-gray-400">
+                <td colSpan={10} className="py-16 text-center text-sm font-bold text-gray-400">
                   No records matching the selected criteria.
                 </td>
               </tr>
             ) : (
-              paginatedRecords.map((record) => (
+              paginatedRecords.map((record, index) => (
                 <tr key={record.id} className="hover:bg-[#046241]/5 dark:hover:bg-white/[0.02] transition-colors group">
+                  <td className="py-4 px-6 text-sm font-bold text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                    {startIndex + index + 1}
+                  </td>
                   <td className="py-4 px-6 text-sm font-black text-[#133020] dark:text-white whitespace-nowrap group-hover:text-[#046241] dark:group-hover:text-[#ffb347] transition-colors">
                     {record.companyName}
                   </td>
@@ -270,6 +274,21 @@ export function RecordsTable({ records }: RecordsTableProps) {
                     {record.phone || "Not Provided"}
                   </td>
                   <td className="py-4 px-6 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      {record.linkedin && (
+                        <a href={record.linkedin} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-[#0077b5]/10 text-[#0077b5] hover:bg-[#0077b5]/20 font-bold transition-colors" title="LinkedIn">
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                        </a>
+                      )}
+                      {record.website && (
+                        <a href={record.website.startsWith('http') ? record.website : `https://${record.website}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 font-bold transition-colors" title="Website">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253" /></svg>
+                        </a>
+                      )}
+                      {!record.linkedin && !record.website && <span className="text-gray-300 text-xs">-</span>}
+                    </div>
+                  </td>
+                  <td className="py-4 px-6 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-extrabold border ${
                         record.status === "Accepted"
@@ -293,21 +312,6 @@ export function RecordsTable({ records }: RecordsTableProps) {
                   </td>
                   <td className="py-4 px-6 text-xs font-bold text-gray-400 whitespace-nowrap">
                     {record.dateAdded}
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {record.linkedin && (
-                        <a href={record.linkedin} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-[#0077b5]/10 text-[#0077b5] hover:bg-[#0077b5]/20 font-bold text-[10px]">
-                          LinkedIn
-                        </a>
-                      )}
-                      {record.website && (
-                        <a href={record.website.startsWith('http') ? record.website : `https://${record.website}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 text-[10px] font-bold">
-                          Web
-                        </a>
-                      )}
-                      {!record.linkedin && !record.website && <span className="text-gray-300 text-xs">-</span>}
-                    </div>
                   </td>
                 </tr>
               ))

@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase/client";
 import { RecordsTable, type RecordData } from "../../components/records/RecordsTable";
 import { CompletedFilesModal } from "../../components/records/CompletedFilesModal";
 import { CustomSelect } from "../../components/ui/CustomSelect";
+import { SelectDropdown } from "../../components/ui/SelectDropdown";
 
 export default function RecordsPage() {
 
@@ -267,14 +268,20 @@ export default function RecordsPage() {
             <span className="text-xs font-black text-[#133020] dark:text-gray-300 ml-2 uppercase tracking-wider hidden sm:inline">
               Import Category:
             </span>
-            <select
-              value={selectedImportCategory}
-              onChange={(e) => setSelectedImportCategory(e.target.value as any)}
-              className="px-3 py-2 rounded-xl text-xs font-black bg-[#f5eedb] dark:bg-[#1c1915] text-[#133020] dark:text-[#ffb347] border border-[#046241]/20 dark:border-white/10 focus:outline-none cursor-pointer shadow-2xs"
-            >
-              <option value="Companies">Companies</option>
-              <option value="Filipino Community Organizations">Filipino Community Organizations</option>
-            </select>
+            <div className="relative z-50">
+              <SelectDropdown
+                value={selectedImportCategory}
+                onChange={(val) => setSelectedImportCategory(val as any)}
+                options={[
+                  { label: "Companies", value: "Companies" },
+                  { label: "Filipino Community Organizations", value: "Filipino Community Organizations" }
+                ]}
+                className="px-4 py-2.5 rounded-xl text-xs font-black bg-[#f5eedb] dark:bg-[#1c1915] text-[#133020] dark:text-[#ffb347] border border-[#046241]/20 dark:border-white/10 hover:bg-[#ebdcae] dark:hover:bg-[#2a261f] focus:outline-none cursor-pointer shadow-sm transition-colors flex items-center justify-between gap-3 min-w-[140px]"
+                dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[280px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200"
+                optionClassName="w-full text-left px-4 py-3 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-white/5 transition-colors"
+                activeOptionClassName="w-full text-left px-4 py-3 text-xs font-black bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+              />
+            </div>
 
             <input
               type="file"

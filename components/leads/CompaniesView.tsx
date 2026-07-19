@@ -51,15 +51,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     }
 
     // Classify category: use explicit category or infer from name
-    const itemCategory = c.category || (
-      c.name.toLowerCase().includes("filipino") || 
-      c.name.toLowerCase().includes("community") || 
-      c.name.toLowerCase().includes("association") || 
-      c.name.toLowerCase().includes("org") ||
-      c.name.toLowerCase().includes("federation")
-        ? "Filipino Community Organizations" 
-        : "Companies"
-    );
+    const itemCategory = c.category || "Companies";
 
     if (itemCategory !== activeSubcategory) return false;
 
@@ -172,7 +164,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
             </span>
           </h1>
           <p className="text-sm font-medium text-[#046241]/70 dark:text-gray-400">
-            Showing {filteredCompanies.length} active leads · {activeSubcategory}
+            Showing {filteredCompanies.length} not active leads · {activeSubcategory}
           </p>
         </div>
 

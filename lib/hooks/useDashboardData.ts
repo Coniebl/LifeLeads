@@ -120,9 +120,7 @@ export function useDashboardData() {
       // Apply Leads Type Filter
       const records = rawRecords.filter(r => {
         if (leadsType === "All Types") return true;
-        const name = (r.company_name || "").toLowerCase();
-        const isFilipino = name.includes("filipino") || name.includes("community") || name.includes("association") || name.includes("org") || name.includes("federation");
-        const category = r.category || (isFilipino ? "Filipino Community Organizations" : "Companies");
+        const category = r.category || "Companies";
         if (leadsType.includes("Filipino")) return category === "Filipino Community Organizations";
         return category === "Companies";
       });
@@ -175,7 +173,7 @@ export function useDashboardData() {
           else if (!company.status || company.status === "Not Active") inactiveCount++;
         });
 
-        if (companies.size === 0) return;
+        // We removed the early return if (companies.size === 0) return; so it properly resets stats to 0
 
         const total = companies.size;
         const leadsSum = records.length;
@@ -227,7 +225,7 @@ export function useDashboardData() {
           pendingCount,
           rejectedCount,
           inactiveCount,
-          totalLeads: leadsSum,
+          totalLeads: inactiveCount,
           totalCountries: uniqueCountries.size,
           totalIndustries: uniqueIndustries.size,
           acceptedOfferCount: acceptedCount,
