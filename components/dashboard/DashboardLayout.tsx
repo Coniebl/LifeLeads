@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode } from "react";
+import React, { ReactNode, Suspense } from "react";
 import { Sidebar } from "./Sidebar";
 import { DashboardProvider, useDashboardContext } from "../../lib/contexts/DashboardContext";
 
@@ -16,14 +16,16 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
   return (
     <main className="h-screen w-full flex overflow-hidden bg-[#f5eedb] dark:bg-[#0d0b09] transition-colors duration-300 font-sans">
-      <Sidebar
-        user={user}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        handleLogout={handleLogout}
-      />
+      <Suspense fallback={<div className="h-full bg-[#0F2E1E] dark:bg-[#14120e] w-20 flex-shrink-0 z-30 transition-all duration-300" />}>
+        <Sidebar
+          user={user}
+          isDarkMode={isDarkMode}
+          setIsDarkMode={setIsDarkMode}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          handleLogout={handleLogout}
+        />
+      </Suspense>
       <div className="flex-1 h-full overflow-y-auto p-6 md:p-8 transition-all duration-300 bg-[#f5eedb] dark:bg-[#0d0b09]">
         {children}
       </div>

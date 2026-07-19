@@ -255,26 +255,11 @@ export default function RecordsPage() {
         {/* Header Section */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#046241]/10 dark:bg-[#ffb347]/10 text-[10px] font-bold uppercase tracking-widest text-[#046241] dark:text-[#ffb347] mb-2.5 border border-[#046241]/20 dark:border-[#ffb347]/20">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#046241] dark:bg-[#ffb347] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#046241] dark:bg-[#ffb347]"></span>
-              </span>
-              Database • Live
-            </div>
-
             <h1 className="text-[32px] md:text-4xl font-black tracking-tight mb-1">
               <span className="text-transparent bg-clip-text bg-linear-to-r from-[#133020] via-[#046241] to-[#b45309] dark:from-[#4ade80] dark:via-[#2dd4bf] dark:to-[#ffb347]">
                 Records Manager
               </span>
             </h1>
-
-            <p className="text-xs md:text-sm font-medium text-[#046241]/70 dark:text-gray-400 flex items-center gap-1.5">
-              <svg className="w-4 h-4 text-[#046241]/50 dark:text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {formattedDate()}
-            </p>
           </div>
 
           {/* Import section with Subcategory Dropdown right next to file name/before import button */}

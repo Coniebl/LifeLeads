@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { type CompanyData } from "../leads/CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
 import * as xlsx from "xlsx";
@@ -10,7 +11,8 @@ export function StatusView({
   companies: CompanyData[];
   setCompanies?: React.Dispatch<React.SetStateAction<CompanyData[]>>;
 }) {
-  const [selectedSubCategory, setSelectedSubCategory] = useState<"Companies" | "Filipino Community Organizations">("Companies");
+  const searchParams = useSearchParams();
+  const selectedSubCategory = searchParams.get("category") || "Companies";
   const [statusTab, setStatusTab] = useState<"Pending" | "Accepted" | "Rejected" | "Not Active">("Pending");
   const [selectedSource, setSelectedSource] = useState("All Records");
   const [selectedIndustry, setSelectedIndustry] = useState("All Industries");
@@ -167,7 +169,7 @@ export function StatusView({
       {/* Header & Subcategory Switcher & Export Data */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-1">
+          <h1 className="text-[32px] md:text-4xl font-black tracking-tight mb-1">
             <span className="text-transparent bg-clip-text bg-linear-to-r from-[#133020] via-[#046241] to-[#b45309] dark:from-[#4ade80] dark:via-[#2dd4bf] dark:to-[#ffb347]">
               Status - {selectedSubCategory}
             </span>
@@ -178,39 +180,7 @@ export function StatusView({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Subcategory Switch Buttons */}
-          <div className="flex p-1 bg-[#133020]/5 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
-            <button
-              onClick={() => {
-                setSelectedSubCategory("Companies");
-                setSelectedSource("All Records");
-                setSelectedIndustry("All Industries");
-                setSelectedCountry("All Countries");
-              }}
-              className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                selectedSubCategory === "Companies"
-                  ? "bg-[#046241] text-white shadow-md shadow-[#046241]/20 scale-[1.02]"
-                  : "text-[#133020] dark:text-gray-300 hover:text-[#046241] dark:hover:text-[#ffb347]"
-              }`}
-            >
-              Companies
-            </button>
-            <button
-              onClick={() => {
-                setSelectedSubCategory("Filipino Community Organizations");
-                setSelectedSource("All Records");
-                setSelectedIndustry("All Industries");
-                setSelectedCountry("All Countries");
-              }}
-              className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                selectedSubCategory === "Filipino Community Organizations"
-                  ? "bg-[#046241] text-white shadow-md shadow-[#046241]/20 scale-[1.02]"
-                  : "text-[#133020] dark:text-gray-300 hover:text-[#046241] dark:hover:text-[#ffb347]"
-              }`}
-            >
-              Filipino Community Organizations
-            </button>
-          </div>
+          {/* Subcategory toggles removed in favor of sidebar navigation */}
 
           {/* Export Data Button right beside top header */}
           <button
@@ -228,13 +198,13 @@ export function StatusView({
       {/* Status Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: "TOTAL", count: totalCount, color: "text-[#046241] dark:text-[#4ade80]" },
-          { label: "ACCEPTED", count: acceptedCount, color: "text-[#046241] dark:text-[#2dd4bf]" },
-          { label: "REJECTED", count: rejectedCount, color: "text-red-500 dark:text-red-400" },
-          { label: "PENDING", count: pendingCount, color: "text-[#ffb347] dark:text-[#ffb347]" },
-          { label: "NOT ACTIVE", count: inactiveCount, color: "text-gray-500 dark:text-gray-400" },
+          { label: "TOTAL", count: totalCount, color: "text-[#046241] dark:text-[#4ade80]", glow: "dark:border-[#4ade80] dark:shadow-[0_0_15px_rgba(74,222,128,0.25)]" },
+          { label: "ACCEPTED", count: acceptedCount, color: "text-[#046241] dark:text-[#2dd4bf]", glow: "dark:border-[#2dd4bf] dark:shadow-[0_0_15px_rgba(45,212,191,0.25)]" },
+          { label: "REJECTED", count: rejectedCount, color: "text-red-500 dark:text-red-400", glow: "dark:border-red-400 dark:shadow-[0_0_15px_rgba(248,113,113,0.25)]" },
+          { label: "PENDING", count: pendingCount, color: "text-[#ffb347] dark:text-[#ffb347]", glow: "dark:border-[#ffb347] dark:shadow-[0_0_15px_rgba(255,179,71,0.25)]" },
+          { label: "NOT ACTIVE", count: inactiveCount, color: "text-gray-500 dark:text-gray-400", glow: "dark:border-gray-400 dark:shadow-[0_0_15px_rgba(156,163,175,0.25)]" },
         ].map((stat, idx) => (
-          <div key={idx} className="bg-white dark:bg-[#14120e] border border-gray-100 dark:border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm">
+          <div key={idx} className={`bg-white dark:bg-[#14120e] border border-gray-100 rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm transition-all ${stat.glow}`}>
             <span className={`text-3xl font-black ${stat.color}`}>{stat.count}</span>
             <span className="text-[10px] font-bold text-gray-400 tracking-widest mt-1">{stat.label}</span>
           </div>
@@ -258,7 +228,7 @@ export function StatusView({
               <button
                 key={tab}
                 onClick={() => setStatusTab(tab)}
-                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black transition-all duration-300 ease-in-out cursor-pointer ${
                   statusTab === tab
                     ? tab === "Accepted"
                       ? "bg-[#046241] text-white shadow-md shadow-[#046241]/20 scale-105"

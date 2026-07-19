@@ -15,7 +15,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   const [selectedSource, setSelectedSource] = useState("All Records");
   
   // Subcategories: Companies vs Filipino Community Organizations
-  const [activeSubcategory, setActiveSubcategory] = useState<"Companies" | "Filipino Community Organizations">("Companies");
+  const activeSubcategory = searchParams.get("category") || "Companies";
   const [currentPage, setCurrentPage] = useState(1);
 
   // Modal states
@@ -166,9 +166,9 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-1">
         <div>
           {/* Main Title showing Tab + active subcategory */}
-          <h1 className="text-[28px] md:text-3xl font-black tracking-tight mb-1">
+          <h1 className="text-[32px] md:text-4xl font-black tracking-tight mb-1">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#133020] via-[#046241] to-[#b45309] dark:from-[#4ade80] dark:via-[#2dd4bf] dark:to-[#ffb347]">
-              Leads - [{activeSubcategory}]
+              Leads - {activeSubcategory}
             </span>
           </h1>
           <p className="text-sm font-medium text-[#046241]/70 dark:text-gray-400">
@@ -176,35 +176,6 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
           </p>
         </div>
 
-        {/* Subcategory Switcher Tabs */}
-        <div className="flex items-center gap-2 p-1.5 bg-white dark:bg-[#1a1714] border border-gray-200/80 dark:border-white/10 rounded-2xl shadow-sm self-start md:self-auto">
-          <button
-            onClick={() => setActiveSubcategory("Companies")}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
-              activeSubcategory === "Companies"
-                ? "bg-[#046241] text-white shadow-md shadow-[#046241]/20 scale-102"
-                : "text-gray-500 dark:text-gray-400 hover:text-[#133020] dark:hover:text-white"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M5.25 21V6.75A2.25 2.25 0 017.5 4.5h9a2.25 2.25 0 012.25 2.25V21M9 21v-3.75h6V21M9 8.25h.008v.008H9V8.25zm3 0h.008v.008H12V8.25zm3 0h.008v.008H15V8.25zm-6 3h.008v.008H9v-.008zm3 0h.008v.008H12v-.008zm3 0h.008v.008H15v-.008z" />
-            </svg>
-            Companies
-          </button>
-          <button
-            onClick={() => setActiveSubcategory("Filipino Community Organizations")}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
-              activeSubcategory === "Filipino Community Organizations"
-                ? "bg-[#046241] text-white shadow-md shadow-[#046241]/20 scale-102"
-                : "text-gray-500 dark:text-gray-400 hover:text-[#133020] dark:hover:text-white"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-            </svg>
-            Filipino Community Organizations
-          </button>
-        </div>
       </div>
 
       {/* Unified Search and Filters Bar */}

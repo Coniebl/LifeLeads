@@ -1,5 +1,6 @@
 import React from "react";
 import { useRouter } from "next/navigation";
+import { SelectDropdown } from "../ui/SelectDropdown";
 
 interface DashboardHeaderProps {
   searchQuery: string;
@@ -97,53 +98,49 @@ export function DashboardHeader({
       </div>
 
       {/* Dropdown Filters */}
-      <div className="flex gap-4 w-full md:w-auto">
+      <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto relative z-40">
         
         {/* Leads Type Filter */}
         <div className="relative w-full md:w-56">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-4 w-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-          </div>
-          <select
+          <SelectDropdown
             value={leadsType}
-            onChange={(e) => setLeadsType(e.target.value)}
-            className="w-full pl-10 pr-10 py-3 bg-white dark:bg-[#181512] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all appearance-none cursor-pointer"
-          >
-            <option value="All Types">All Types</option>
-            <option value="Companies">Companies</option>
-            <option value="Filipino Community Organizations">Filipino Community Orgs</option>
-          </select>
-          <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
+            onChange={(val) => setLeadsType(val)}
+            options={[
+              { label: "All Types", value: "All Types" },
+              { label: "Companies", value: "Companies" },
+              { label: "Filipino Community Orgs", value: "Filipino Community Organizations" }
+            ]}
+            icon={
+              <svg className="h-4 w-4 text-[#046241] dark:text-[#ffb347] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            }
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 bg-white dark:bg-[#181512] hover:bg-gray-50 dark:hover:bg-[#23201b] hover:border-[#046241]/30 dark:hover:border-white/20 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-gray-700 dark:text-gray-200"
+            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+          />
         </div>
 
         {/* File Dropdown Filter */}
         <div className="relative w-full md:w-64">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-4 w-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <select
+          <SelectDropdown
             value={selectedFile}
-            onChange={(e) => setSelectedFile(e.target.value)}
-            className="w-full pl-10 pr-8 py-3 bg-white dark:bg-[#181512] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 appearance-none focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all cursor-pointer"
-          >
-            <option value="All Files">All Files</option>
-            {availableFiles.map(file => (
-              <option key={file} value={file}>{file}</option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
+            onChange={(val) => setSelectedFile(val)}
+            options={[
+              { label: "All Files", value: "All Files" },
+              ...availableFiles.map(file => ({ label: file, value: file }))
+            ]}
+            icon={
+              <svg className="h-4 w-4 text-[#046241] dark:text-[#ffb347] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            }
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 bg-white dark:bg-[#181512] hover:bg-gray-50 dark:hover:bg-[#23201b] hover:border-[#046241]/30 dark:hover:border-white/20 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-gray-700 dark:text-gray-200"
+            dropdownClassName="absolute top-full mt-2 right-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+          />
         </div>
       </div>
     </div>
