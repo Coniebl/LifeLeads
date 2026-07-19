@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { StatusView } from "../../components/status/StatusView";
 import type { CompanyData } from "../../components/leads/CompanyCard";
 
@@ -102,7 +102,9 @@ export default function StatusPage() {
 
   return (
     <>
-      <StatusView companies={companies} setCompanies={setCompanies} />
+        <Suspense fallback={<div>Loading status view...</div>}>
+          <StatusView companies={companies} setCompanies={setCompanies} />
+        </Suspense>
     </>
   );
 }

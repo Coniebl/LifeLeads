@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { DashboardUser } from "../../lib/hooks/useDashboardData";
 
 interface SidebarProps {
@@ -23,6 +23,8 @@ export function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const category = searchParams.get("category") || "Companies";
   const [mounted, setMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -140,36 +142,73 @@ export function Sidebar({
             else if (item.name === "Status") isActive = pathname === "/status";
             else if (item.name === "Records") isActive = pathname === "/records";
 
+            const hasSubcategories = item.name === "Leads" || item.name === "Status";
+
             return (
-              <button
-                key={item.name}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (item.name === "Leads") router.push("/leads");
-                  else if (item.name === "Dashboard") router.push("/dashboard");
-                  else if (item.name === "Status") router.push("/status");
-                  else if (item.name === "Records") router.push("/records");
-                }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-[#046241] dark:bg-[#1c2419] text-white dark:text-[#ffb347] font-bold shadow-md shadow-[#046241]/20 dark:shadow-none"
-                    : "text-gray-300 dark:text-white/80 hover:text-white hover:bg-white/10 dark:hover:bg-white/5 font-semibold"
-                }`}
-                title={!isExpanded ? item.label : undefined}
-              >
-                <div className="flex items-center gap-4">
-                  {item.icon}
-                  {isExpanded && (
-                    <span className="animate-in fade-in duration-300 whitespace-nowrap overflow-hidden text-sm">
-                      {item.label}
-                    </span>
-                  )}
-                </div>
-                {/* Gold Circle for active item */}
-                {isActive && isExpanded ? (
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#ffb347] inline-block flex-shrink-0 animate-pulse" />
-                ) : null}
-              </button>
+              <div key={item.name} className="flex flex-col">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (!isExpanded) setIsExpanded(true); // Auto-expand when clicking a nav item if closed
+                    
+                    if (item.name === "Leads") router.push(`/leads?category=${category}`);
+                    else if (item.name === "Dashboard") router.push("/dashboard");
+                    else if (item.name === "Status") router.push(`/status?category=${category}`);
+                    else if (item.name === "Records") router.push("/records");
+                  }}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 ease-in-out cursor-pointer ${
+                    isActive
+                      ? "bg-[#046241] dark:bg-[#1c2419] text-white dark:text-[#ffb347] font-bold shadow-md shadow-[#046241]/20 dark:shadow-none"
+                      : "text-gray-300 dark:text-white/80 hover:text-white hover:bg-white/10 dark:hover:bg-white/5 font-semibold"
+                  }`}
+                  title={!isExpanded ? item.label : undefined}
+                >
+                  <div className="flex items-center gap-4">
+                    {item.icon}
+                    {isExpanded && (
+                      <span className="animate-in fade-in duration-300 whitespace-nowrap overflow-hidden text-sm">
+                        {item.label}
+                      </span>
+                    )}
+                  </div>
+                  {/* Gold Circle for active item */}
+                  {isActive && isExpanded ? (
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#ffb347] inline-block flex-shrink-0 animate-pulse" />
+                  ) : null}
+                </button>
+
+                {/* Subcategories */}
+                {isActive && isExpanded && hasSubcategories && (
+                  <div className="flex flex-col ml-[26px] pl-3 border-l border-white/20 mt-1 mb-2 gap-1 relative">
+                    <button
+                      onClick={() => router.push(`/${item.name.toLowerCase()}?category=Companies`)}
+                      className={`flex items-center gap-3 w-full text-left text-[13px] font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out ${
+                        category === "Companies"
+                          ? "bg-white text-[#133020] shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                          : "text-gray-300 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0A2.25 2.25 0 001.5 12v4.5c0 1.242.946 2.228 2.155 2.247h16.69c1.21-.019 2.155-1.005 2.155-2.247V12a2.25 2.25 0 00-2.25-2.224m-16.5 0V7.5a2.25 2.25 0 012.25-2.25h4.018c.228 0 .446.102.588.277l1.414 1.768a1.5 1.5 0 001.176.556h5.304A2.25 2.25 0 0121 9.776" />
+                      </svg>
+                      Companies
+                    </button>
+                    <button
+                      onClick={() => router.push(`/${item.name.toLowerCase()}?category=Filipino Community Organizations`)}
+                      className={`flex items-center gap-3 w-full text-left text-[13px] font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out ${
+                        category === "Filipino Community Organizations"
+                          ? "bg-white text-[#133020] shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                          : "text-gray-300 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                      </svg>
+                      Filipino Community Orgs
+                    </button>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

@@ -1,13 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useDashboardContext } from "../../lib/contexts/DashboardContext";
 
 export function DashboardGreetingCard() {
+  const { rawRecords } = useDashboardContext();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [sessionDuration, setSessionDuration] = useState<number>(0);
 
+  const [displayYear, setDisplayYear] = useState<number | null>(null);
+  const [displayMonth, setDisplayMonth] = useState<number | null>(null);
+
   useEffect(() => {
-    setCurrentTime(new Date());
+    const now = new Date();
+    setCurrentTime(now);
+    setDisplayYear(now.getFullYear());
+    setDisplayMonth(now.getMonth());
 
     // Session tracking
     const sessionStartStr = sessionStorage.getItem("sessionStart");
@@ -20,15 +28,41 @@ export function DashboardGreetingCard() {
     }
 
     const interval = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now);
-      setSessionDuration(Math.floor((now.getTime() - startTime) / 1000));
+      const current = new Date();
+      setCurrentTime(current);
+      setSessionDuration(Math.floor((current.getTime() - startTime) / 1000));
     }, 1000);
 
     return () => clearInterval(interval);
   }, []);
 
-  if (!currentTime) return null; // Avoid hydration mismatch
+  const calendarEvents = useMemo(() => {
+    if (!rawRecords || displayYear === null || displayMonth === null) return {};
+    
+    const events: Record<number, { companies: boolean, fcos: boolean }> = {};
+    
+    rawRecords.forEach(r => {
+      if (!r.created_at) return;
+      const date = new Date(r.created_at);
+      if (date.getFullYear() === displayYear && date.getMonth() === displayMonth) {
+        const day = date.getDate();
+        if (!events[day]) events[day] = { companies: false, fcos: false };
+        
+        const name = (r.company_name || "").toLowerCase();
+        const isFilipino = name.includes("filipino") || name.includes("community") || name.includes("association") || name.includes("org") || name.includes("federation");
+        const category = r.category || (isFilipino ? "Filipino Community Organizations" : "Companies");
+        
+        if (category === "Filipino Community Organizations") {
+          events[day].fcos = true;
+        } else {
+          events[day].companies = true;
+        }
+      }
+    });
+    return events;
+  }, [rawRecords, displayYear, displayMonth]);
+
+  if (!currentTime || displayMonth === null || displayYear === null) return null; // Avoid hydration mismatch
 
   const hours = currentTime.getHours();
   let greeting = "Good Evening";
@@ -41,17 +75,16 @@ export function DashboardGreetingCard() {
   const sessionString = `${sessionH > 0 ? `${sessionH}h ` : ''}${sessionM}m ${sessionS}s`;
 
   // Calendar logic
-  const year = currentTime.getFullYear();
-  const month = currentTime.getMonth();
-  const date = currentTime.getDate();
+  const todayYear = currentTime.getFullYear();
+  const todayMonth = currentTime.getMonth();
+  const todayDate = currentTime.getDate();
 
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(displayYear, displayMonth, 1).getDay();
+  const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
   
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const days = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
-  // Generate calendar grid
   const calendarCells = [];
   for (let i = 0; i < firstDay; i++) {
     calendarCells.push(null);
@@ -60,8 +93,26 @@ export function DashboardGreetingCard() {
     calendarCells.push(i);
   }
 
+  const handlePrevMonth = () => {
+    if (displayMonth === 0) {
+      setDisplayMonth(11);
+      setDisplayYear(displayYear - 1);
+    } else {
+      setDisplayMonth(displayMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (displayMonth === 11) {
+      setDisplayMonth(0);
+      setDisplayYear(displayYear + 1);
+    } else {
+      setDisplayMonth(displayMonth + 1);
+    }
+  };
+
   return (
-    <div className="relative w-full rounded-[32px] overflow-hidden bg-black text-white shadow-2xl mb-8 min-h-[360px] flex items-center">
+    <div className="relative w-full rounded-[32px] overflow-hidden bg-black text-white shadow-2xl mb-8 min-h-[360px] flex items-center dark:border dark:border-[#046241] dark:shadow-[0_0_20px_rgba(4,98,65,0.6)]">
       {/* Background Video */}
       <video 
         src="/background video.mp4" 
@@ -112,15 +163,15 @@ export function DashboardGreetingCard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-[10px] font-black text-gray-400 tracking-widest mb-1">
-                {(month + 1).toString().padStart(2, '0')} \ {year}
+                {(displayMonth + 1).toString().padStart(2, '0')} \ {displayYear}
               </p>
-              <h3 className="text-2xl font-black text-white">{monthNames[month]}</h3>
+              <h3 className="text-2xl font-black text-white">{monthNames[displayMonth]}</h3>
             </div>
             <div className="flex gap-2">
-              <button className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+              <button onClick={handlePrevMonth} className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
               </button>
-              <button className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+              <button onClick={handleNextMonth} className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
               </button>
             </div>
@@ -130,36 +181,40 @@ export function DashboardGreetingCard() {
             {days.map(d => (
               <div key={d} className="text-[10px] font-black text-[#ccff00]">{d}</div>
             ))}
-            {calendarCells.map((day, idx) => (
-              <div key={idx} className="relative flex items-center justify-center h-8">
-                {day && (
-                  <span className={`w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg ${
-                    day === date 
-                      ? 'border border-[#ccff00] text-[#ccff00] bg-[#ccff00]/10' 
-                      : 'text-gray-300'
-                  }`}>
-                    {day}
-                  </span>
-                )}
-                {/* Decorative dots for sample effect */}
-                {day && (day % 4 === 0) && day !== date && (
-                  <span className="absolute bottom-0 w-1 h-1 rounded-full bg-[#ccff00]"></span>
-                )}
-                {day === date && (
-                  <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-[#ccff00]"></span>
-                )}
-              </div>
-            ))}
+            {calendarCells.map((day, idx) => {
+              const isToday = day === todayDate && displayMonth === todayMonth && displayYear === todayYear;
+              
+              return (
+                <div key={idx} className="relative flex items-center justify-center h-8">
+                  {day && (
+                    <span className={`w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg ${
+                      isToday 
+                        ? 'border border-[#ccff00] text-[#ccff00] bg-[#ccff00]/10' 
+                        : 'text-gray-300'
+                    }`}>
+                      {day}
+                    </span>
+                  )}
+                  {/* Decorative dots from data */}
+                  {day && calendarEvents[day] && (
+                    <div className="absolute -bottom-1 flex gap-0.5">
+                      {calendarEvents[day].companies && <span className="w-1 h-1 rounded-full bg-[#ccff00]"></span>}
+                      {calendarEvents[day].fcos && <span className="w-1 h-1 rounded-full bg-[#ffb347]"></span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/10">
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00f0ff]"></span>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Start Date</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Companies</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Deadline</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Community Orgs</span>
             </div>
           </div>
         </div>

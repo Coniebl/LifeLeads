@@ -292,5 +292,6 @@ export function useDashboardData() {
     allCompanyNames,
     leadsType,
     setLeadsType,
+    rawRecords,
   };
 }
