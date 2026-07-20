@@ -529,17 +529,18 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                   {selectedCompany.name}
                 </h2>
 
-                {/* Country */}
-                <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-3 bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-full">
-                  <svg className="w-3.5 h-3.5 text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                  </svg>
-                  {selectedCompany.country}
-                </div>
+                {/* Country and Industry */}
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+                  {/* Country */}
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-full">
+                    <svg className="w-3.5 h-3.5 text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    </svg>
+                    {selectedCompany.country}
+                  </div>
 
-                {/* Industry Type */}
-                <div className="flex flex-wrap gap-2 justify-center mb-4">
+                  {/* Industry Type */}
                   {selectedCompany.industries.map(ind => (
                     <span key={ind} className="px-3.5 py-1 rounded-full bg-[#046241]/10 dark:bg-[#046241]/30 text-[11px] font-black text-[#046241] dark:text-[#4ade80] uppercase tracking-wider">
                       {ind}
@@ -563,23 +564,45 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                     </div>
                   </div>
 
-                  {/* Contact Number below contact person */}
-                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Number</label>
-                    <div className="flex items-center justify-between w-full mt-0.5">
-                      <div className="flex items-center gap-3 text-[#133020] dark:text-white font-bold text-sm">
-                        <svg className="w-5 h-5 text-[#046241]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.596-5.25-3.95-6.847-6.847l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-                        </svg>
-                        {selectedCompany.contactNumber || "Not Provided"}
+                  {/* Contact Numbers below contact person */}
+                  <div className="flex flex-col gap-3 p-3 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/5">
+                    
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile / Direct</label>
+                        <div className="flex items-center gap-3 text-[#133020] dark:text-white font-bold text-sm mt-0.5">
+                          <svg className="w-5 h-5 text-[#046241]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                          </svg>
+                          {selectedCompany.contactMobile || "Not Provided"}
+                        </div>
                       </div>
                       <button 
                         onClick={handleManualContact} 
-                        className="px-4 py-1.5 bg-[#046241]/10 text-[#046241] dark:bg-[#ffb347]/10 dark:text-[#ffb347] hover:bg-[#046241]/20 dark:hover:bg-[#ffb347]/20 text-xs font-bold rounded-lg shadow-sm hover:scale-105 transition-all"
+                        className="px-4 py-1.5 bg-[#046241]/10 text-[#046241] dark:bg-[#ffb347]/10 dark:text-[#ffb347] hover:bg-[#046241]/20 dark:hover:bg-[#ffb347]/20 text-xs font-bold rounded-lg shadow-sm hover:scale-105 transition-all self-end"
                       >
                         Contacted
                       </button>
                     </div>
+
+                    <div className="flex items-center justify-between w-full border-t border-gray-200 dark:border-white/5 pt-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Telephone</label>
+                        <div className="flex items-center gap-3 text-[#133020] dark:text-white font-bold text-sm mt-0.5">
+                          <svg className="w-5 h-5 text-[#046241]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.596-5.25-3.95-6.847-6.847l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                          </svg>
+                          {selectedCompany.contactTelephone || "Not Provided"}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={handleManualContact} 
+                        className="px-4 py-1.5 bg-[#046241]/10 text-[#046241] dark:bg-[#ffb347]/10 dark:text-[#ffb347] hover:bg-[#046241]/20 dark:hover:bg-[#ffb347]/20 text-xs font-bold rounded-lg shadow-sm hover:scale-105 transition-all self-end"
+                      >
+                        Contacted
+                      </button>
+                    </div>
+
                   </div>
 
                   {/* Social / Web Links */}
