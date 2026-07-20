@@ -518,29 +518,37 @@ export function StatusView({
             </div>
 
             {/* Offer Decision Action Buttons (Accepted / Rejected) */}
-            <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex flex-col sm:flex-row items-center gap-3 justify-end">
-              <button
-                disabled={isUpdating || selectedCompany.status === "Rejected"}
-                onClick={() => handleUpdateStatus("Rejected")}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                {selectedCompany.status === "Rejected" ? "Already Rejected" : "Rejected Offer"}
-              </button>
+            {selectedCompany.status && selectedCompany.status !== "Not Active" ? (
+              <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex flex-col sm:flex-row items-center gap-3 justify-end">
+                <button
+                  disabled={isUpdating || selectedCompany.status === "Rejected"}
+                  onClick={() => handleUpdateStatus("Rejected")}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  {selectedCompany.status === "Rejected" ? "Already Rejected" : "Rejected Offer"}
+                </button>
 
-              <button
-                disabled={isUpdating || selectedCompany.status === "Accepted"}
-                onClick={() => handleUpdateStatus("Accepted")}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-[#046241] hover:bg-[#034d33] active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-[#046241]/20 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                {selectedCompany.status === "Accepted" ? "Already Accepted" : "Accepted Offer"}
-              </button>
-            </div>
+                <button
+                  disabled={isUpdating || selectedCompany.status === "Accepted"}
+                  onClick={() => handleUpdateStatus("Accepted")}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-[#046241] hover:bg-[#034d33] active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-[#046241]/20 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {selectedCompany.status === "Accepted" ? "Already Accepted" : "Accepted Offer"}
+                </button>
+              </div>
+            ) : (
+              <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex items-center justify-center">
+                <p className="text-xs font-bold text-gray-400">
+                  This lead is Not Active. Process it from the Leads tab first.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
