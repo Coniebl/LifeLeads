@@ -153,10 +153,10 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     await supabase.from('company_contacts').update({ 
       status: 'Pending',
       status_updated_at: new Date().toISOString()
-    }).eq('company_name', selectedCompany.name);
+    }).eq('id', selectedCompany.id);
     
     // Update local state
-    setCompanies(prev => prev.map(c => c.name === selectedCompany.name ? { ...c, status: "Pending" } : c));
+    setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? { ...c, status: "Pending" } : c));
     showToast(`${selectedCompany.name} processed and moved to Status tab!`);
 
     // Find next company in current list to auto-open

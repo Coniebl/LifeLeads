@@ -41,7 +41,7 @@ export function useDashboardData() {
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [leadsType, setLeadsType] = useState("All Leads");
   const [rawRecords, setRawRecords] = useState<any[] | null>(null);
-  const [rawIndustries, setRawIndustries] = useState<any[] | null>(null);
+
 
   useEffect(() => {
     if (isDarkMode) {
@@ -85,8 +85,8 @@ export function useDashboardData() {
 
     const fetchSupabaseData = async () => {
       try {
-        const { data: contactsData, error: contactsError } = await supabase.from("company_contacts").select("*");
-        const { data: indData, error: indError } = await supabase.from("company_industries").select("*");
+        const { fetchAllCompanyContacts } = await import("../supabase/client");
+        const { data: contactsData, error: contactsError } = await fetchAllCompanyContacts();
 
         if (contactsError) {
           console.warn("Supabase error loading contacts data:", contactsError.message);
@@ -94,7 +94,6 @@ export function useDashboardData() {
         }
 
         setRawRecords(contactsData ?? []);
-        setRawIndustries(indData ?? []);
       } catch (err) {
         console.error("Connection failed:", err);
       }
@@ -114,110 +113,83 @@ export function useDashboardData() {
 
   // Separate effect to process the data whenever raw data or filters change
   useEffect(() => {
-    if (!rawRecords || !rawIndustries) return;
+    if (!rawRecords) return;
 
     try {
       // Apply Leads Type Filter
       const records = rawRecords.filter(r => {
         if (leadsType === "All Leads") return true;
-        const category = r.category || "Companies";
-        if (leadsType.includes("Filipino")) return category === "Filipino Community Organizations";
-        return category === "Companies";
+        
+        const inferredCat = r.category || "Companies";
+        
+        if (leadsType.includes("Filipino")) return inferredCat === "Filipino Community Organizations";
+        return inferredCat === "Companies";
       });
 
-      const industryRecords = rawIndustries;
+      let pendingCount = 0;
+      let acceptedCount = 0;
+      let rejectedCount = 0;
+      let inactiveCount = 0;
+
+      const uniqueCountries = new Set<string>();
+      const uniqueIndustries = new Set<string>();
+      const uniqueSources = new Set<string>();
+      const countryMap: Record<string, { count: number; companies: string[] }> = {};
+      const industryCountMap: Record<string, number> = {};
+      const monthlyAccepted = Array(12).fill(0);
+      const monthlyRejected = Array(12).fill(0);
+
+      records.forEach((record) => {
+        if (record.source_file && record.source_file.trim() !== "") {
+          uniqueSources.add(record.source_file.trim());
+        }
+
+        const status = record.status || "Not Active";
+        if (status === "Pending") pendingCount++;
+        else if (status === "Accepted") acceptedCount++;
+        else if (status === "Rejected") rejectedCount++;
+        else inactiveCount++;
+
+        const country = record.country?.trim() || "Unknown";
+        uniqueCountries.add(country);
+        
+        const name = record.company_name?.trim() || "Unknown Company";
+
+        if (!countryMap[country]) {
+          countryMap[country] = { count: 0, companies: [] };
+        }
+        countryMap[country].count++;
+        // push unique company names to the country's companies list
+        if (!countryMap[country].companies.includes(name)) {
+           countryMap[country].companies.push(name);
+        }
+
+        let firstIndustry = "General";
+        if (record.industries?.trim()) {
+          const inds = record.industries.split(',').map((ind: string) => ind.replace(/[\[\]'"]/g, '').trim()).filter(Boolean);
+          inds.forEach((ind: string) => uniqueIndustries.add(ind));
+          if (inds.length > 0) firstIndustry = inds[0];
+        }
+
+        industryCountMap[firstIndustry] = (industryCountMap[firstIndustry] || 0) + 1;
+
+        if (record.created_at) {
+          const date = new Date(record.created_at);
+          const month = date.getMonth(); 
+          if (!isNaN(month)) {
+            if (status === "Accepted") monthlyAccepted[month]++;
+            if (status === "Rejected") monthlyRejected[month]++;
+          }
+        }
+      });
+
+      const total = records.length;
       
-      const companies = new Map<string, { country: string; industries: Set<string>; leads: number; status: string; created_at?: string }>();
-        const companyToGenIndustry = new Map<string, string>();
-        
-        industryRecords.forEach(ir => {
-          if (ir.company_name && ir.general_industry_type) {
-            companyToGenIndustry.set(ir.company_name.trim(), ir.general_industry_type.trim());
-          }
-        });
-        
-        let pendingCount = 0;
-        let acceptedCount = 0;
-        let rejectedCount = 0;
-        let inactiveCount = 0;
-
-        records.forEach((record) => {
-          if (!record.company_name?.trim()) return;
-          const name = record.company_name.trim();
-
-          if (!companies.has(name)) {
-            companies.set(name, { 
-              country: record.country?.trim() || "Unknown", 
-              industries: new Set<string>(), 
-              leads: 0,
-              status: record.status,
-              created_at: record.created_at
-            });
-          }
-
-          const company = companies.get(name)!;
-          company.leads += 1;
-
-          if (record.industries?.trim()) {
-            record.industries.split(',').forEach((ind: string) => {
-              const cleaned = ind.replace(/[\[\]'"]/g, '').trim();
-              if (cleaned) company.industries.add(cleaned);
-            });
-          }
-        });
-
-        companies.forEach((company) => {
-          if (company.status === "Pending") pendingCount++;
-          else if (company.status === "Accepted") acceptedCount++;
-          else if (company.status === "Rejected") rejectedCount++;
-          else if (!company.status || company.status === "Not Active") inactiveCount++;
-        });
-
-        // We removed the early return if (companies.size === 0) return; so it properly resets stats to 0
-
-        const total = companies.size;
-        const leadsSum = records.length;
-        const uniqueCountries = new Set<string>();
-        const uniqueIndustries = new Set<string>();
-        const uniqueSources = new Set<string>();
-
-        const countryMap: Record<string, { count: number; companies: string[] }> = {};
-        const industryCountMap: Record<string, number> = {};
-        const monthlyAccepted = Array(12).fill(0);
-        const monthlyRejected = Array(12).fill(0);
-
-        records.forEach(r => {
-          if (r.source_file && r.source_file.trim() !== "") {
-            uniqueSources.add(r.source_file.trim());
-          }
-        });
-        setAvailableFiles(Array.from(uniqueSources).sort());
-        setAllCompanyNames(Array.from(companies.keys()));
-
-        companies.forEach((company, name) => {
-          const country = company.country;
-          uniqueCountries.add(country);
-          company.industries.forEach((industry) => uniqueIndustries.add(industry));
-
-          if (!countryMap[country]) {
-            countryMap[country] = { count: 0, companies: [] };
-          }
-          countryMap[country].count++;
-          countryMap[country].companies.push(name);
-          
-          const genIndustry = companyToGenIndustry.get(name) || "Other";
-          industryCountMap[genIndustry] = (industryCountMap[genIndustry] || 0) + 1;
-          
-          // Add to monthly chart if created_at exists AND it's accepted or rejected
-          if (company.created_at) {
-            const date = new Date(company.created_at);
-            const month = date.getMonth(); 
-            if (!isNaN(month)) {
-              if (company.status === "Accepted") monthlyAccepted[month]++;
-              if (company.status === "Rejected") monthlyRejected[month]++;
-            }
-          }
-        });
+      // We want to extract unique names for autocomplete or other things if necessary
+      const allNames = Array.from(new Set(records.map(r => r.company_name?.trim()).filter(Boolean)));
+      
+      setAvailableFiles(Array.from(uniqueSources).sort());
+      setAllCompanyNames(allNames);
 
         setStats({
           totalCompanies: total,
@@ -225,7 +197,7 @@ export function useDashboardData() {
           pendingCount,
           rejectedCount,
           inactiveCount,
-          totalLeads: inactiveCount,
+          totalLeads: total,
           totalCountries: uniqueCountries.size,
           totalIndustries: uniqueIndustries.size,
           acceptedOfferCount: acceptedCount,
@@ -268,7 +240,7 @@ export function useDashboardData() {
     } catch (err) {
       console.error("Data processing failed:", err);
     }
-  }, [rawRecords, rawIndustries, leadsType]);
+  }, [rawRecords, leadsType]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
