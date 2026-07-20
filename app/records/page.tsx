@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import * as xlsx from "xlsx";
-import { supabase } from "../../lib/supabase/client";
+import { supabase, fetchAllCompanyContacts } from "../../lib/supabase/client";
 import { RecordsTable, type RecordData } from "../../components/records/RecordsTable";
 import { CompletedFilesModal } from "../../components/records/CompletedFilesModal";
 import { CustomSelect } from "../../components/ui/CustomSelect";
@@ -24,40 +24,14 @@ export default function RecordsPage() {
   const [timeRangeDays, setTimeRangeDays] = useState<number>(365);
 
   const fetchRecords = async () => {
-    const [{ data: contactsData, error: contactsErr }, { data: indData }] = await Promise.all([
-      supabase.from('company_contacts').select('*').order('id', { ascending: false }),
-      supabase.from('company_industries').select('*')
-    ]);
+    const { data: contactsData, error: contactsErr } = await fetchAllCompanyContacts({ column: 'id', ascending: false });
 
     if (contactsData && !contactsErr) {
-      const subcatMap = new Map<string, "Companies" | "Filipino Community Organizations">();
-      if (indData) {
-        indData.forEach((row: any) => {
-          if (row.company_name && row.subcategory) {
-            subcatMap.set(row.company_name, row.subcategory as "Companies" | "Filipino Community Organizations");
-          }
-        });
-      }
-      try {
-        const storedMap = JSON.parse(localStorage.getItem("lifelead-company-subcategories") || "{}");
-        Object.entries(storedMap).forEach(([k, v]) => {
-          if (v === "Companies" || v === "Filipino Community Organizations") {
-            subcatMap.set(k, v);
-          }
-        });
-      } catch (e) {}
+
 
       const formatted: RecordData[] = contactsData.map((r: any) => {
         const name = r.company_name;
-        const inferredCat = subcatMap.get(name) || (
-          name.toLowerCase().includes("filipino") || 
-          name.toLowerCase().includes("community") || 
-          name.toLowerCase().includes("association") || 
-          name.toLowerCase().includes("federation") ||
-          name.toLowerCase().includes("org") 
-            ? "Filipino Community Organizations" 
-            : "Companies"
-        );
+        const inferredCat = r.category || "Companies";
 
         return {
           id: r.id.toString(),
@@ -66,7 +40,8 @@ export default function RecordsPage() {
           industry: r.industries || "General",
           contactPerson: r.contact_person || "Not Provided",
           email: r.contact_email || "",
-          phone: r.contact_mobile || r.contact_telephone || r.contact_direct_line || "Not Provided",
+          phone: r.contact_mobile || r.contact_direct_line || "N/A",
+          telephone: r.contact_telephone || "N/A",
           status: r.status || "Not Active",
           dateAdded: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           website: r.company_website || "",
@@ -97,52 +72,52 @@ export default function RecordsPage() {
         const bstr = evt.target?.result;
         const wb = xlsx.read(bstr, { type: "binary" });
         
-        const wsIndustry = wb.Sheets["Industry"];
-        const wsCompanyDetails = wb.Sheets["Company Details"];
-        
-        let industryRows: any[] = [];
-        if (wsIndustry) {
-          const industryData = xlsx.utils.sheet_to_json(wsIndustry);
-          industryRows = industryData.map((row: any) => ({
-            company_name: row["Company Name"] || "",
-            original_industry_input: row["Original Industry Input"] || "",
-            general_industry_type: row["General Industry Type"] || "",
-            subcategory: selectedImportCategory || row["Subcategory"] || "Companies"
-          })).filter((row: any) => row.company_name);
-        }
-
+        const ws = wb.Sheets[wb.SheetNames[0]]; // get first sheet
         let contactRows: any[] = [];
-        if (wsCompanyDetails) {
-          const contactData = xlsx.utils.sheet_to_json(wsCompanyDetails);
-          contactRows = contactData.map((row: any) => ({
-            company_name: row["Company Name"] || "",
-            contact_person: row["Contact Person"] || "",
-            designation: row["Designation"] || "",
-            contact_mobile: String(row["Contact (Mobile)"] || ""),
-            contact_telephone: String(row["Contact (Telephone)"] || ""),
-            contact_fax: String(row["Contact (Fax)"] || ""),
-            contact_direct_line: String(row["Contact (Direct Line)"] || ""),
-            contact_email: row["Contact Email"] || "",
-            office_location: row["Office location"] || "",
-            country: row["Country"] || "",
-            company_website: row["Company Website"] || "",
-            company_linkedin: row["Company LinkedIn"] || "",
-            industries: row["Industries"] || "",
-            source_file: file.name,
-            status: "Not Active",
-          })).filter((row: any) => row.company_name);
+        
+        const normalizeIndustries = (industryString: string) => {
+          if (!industryString) return "";
+          const parts = industryString.split(/[/,]/);
+          const normalized = parts.map(p => {
+            let t = p.trim();
+            if (!t) return "";
+            t = t.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+            if (t === "E-commerce" || t === "E-Commerce") t = "E-Commerce";
+            else if (t === "Healthtech" || t === "Healthcare Staffing Tech") t = "HealthTech";
+            else if (t === "Fintech") t = "FinTech";
+            else if (t === "Edtech") t = "EdTech";
+            else if (t === "Medtech") t = "MedTech";
+            else if (t === "B2b Saas") t = "B2B SaaS";
+            return t;
+          }).filter(Boolean);
+          return Array.from(new Set(normalized)).join(", ");
+        };
+
+        if (ws) {
+          const rawData = xlsx.utils.sheet_to_json(ws);
+          contactRows = rawData.map((row: any) => {
+            return {
+              company_name: row["Company Name"] ? String(row["Company Name"]).trim() : "",
+              contact_person: row["Contact Person"] || "",
+              designation: row["Designation"] || "",
+              contact_mobile: String(row["Contact (Mobile)"] || ""),
+              contact_telephone: String(row["Contact (Telephone)"] || ""),
+              contact_fax: String(row["Contact (Fax)"] || ""),
+              contact_direct_line: String(row["Contact (Direct Line)"] || ""),
+              contact_email: row["Contact Email"] || "",
+              office_location: row["Office location"] || "",
+              country: row["Country"] || "",
+              company_website: row["Company Website"] || "",
+              company_linkedin: row["Company LinkedIn"] || "",
+              industries: normalizeIndustries(row["Industry Type"]),
+              source_file: file.name,
+              status: "Not Active",
+              category: selectedImportCategory,
+            };
+          }).filter((row: any) => row.company_name !== "" && row.company_name.toLowerCase() !== "unknown" && row.company_name !== "-");
         }
 
-        // Save classification mapping in localStorage right away for every company
-        try {
-          const storedMap = JSON.parse(localStorage.getItem("lifelead-company-subcategories") || "{}");
-          contactRows.forEach((row: any) => {
-            if (row.company_name) {
-              storedMap[row.company_name] = selectedImportCategory;
-            }
-          });
-          localStorage.setItem("lifelead-company-subcategories", JSON.stringify(storedMap));
-        } catch (e) {}
+
         
         if (contactRows.length > 0) {
           const { error: contactError } = await supabase.from('company_contacts').insert(contactRows);
@@ -151,21 +126,10 @@ export default function RecordsPage() {
             alert(`Failed to import company details: ${contactError.message}`);
             return;
           }
-        }
-
-        if (industryRows.length > 0) {
-          const { error: indError } = await supabase.from('company_industries').upsert(industryRows);
-          if (indError) {
-            console.error("Error inserting industries:", indError.message, indError.details, indError.hint);
-            alert(`Failed to import industries: ${indError.message}`);
-            return;
-          }
-        }
-
-        if (contactRows.length > 0 || industryRows.length > 0) {
           fetchRecords();
+          window.dispatchEvent(new Event('companyStatusUpdated'));
         } else {
-          alert("No valid data found in 'Industry' or 'Company Details' sheets.");
+          alert("No valid data found in the Excel sheet.");
         }
       } catch (err) {
         console.error("Failed to parse Excel:", err);
@@ -237,12 +201,12 @@ export default function RecordsPage() {
   };
 
   const handleDeleteCompletedFiles = async (filesToDelete: string[]) => {
-    await supabase.from('company_industries').delete().in('company_name', records.filter(r => filesToDelete.includes(r.sourceFile)).map(r => r.companyName));
     const { error } = await supabase.from('company_contacts').delete().in('source_file', filesToDelete);
     
     if (!error) {
       setCompletedFiles(completedFiles.filter(f => !filesToDelete.includes(f)));
       fetchRecords();
+      window.dispatchEvent(new Event('companyStatusUpdated'));
     } else {
       console.error("Failed to delete files from database:", error.message);
       alert("Failed to delete records from the database.");

@@ -94,7 +94,8 @@ export function StatusView({
         "Company Name": c.name,
         "Contact Person": c.contactPerson || "Not Provided",
         "Designation": c.designation || "Not Provided",
-        "Contact Number": c.contactNumber || "Not Provided",
+        "Contact Mobile": c.contactMobile || "Not Provided",
+        "Contact Telephone": c.contactTelephone || "Not Provided",
         "Email": c.email || "Not Provided",
         "Industry": c.industries.join(", "),
         "Country": c.country,
@@ -116,10 +117,9 @@ export function StatusView({
       const ws = wb.addWorksheet(name);
       ws.properties.tabColor = { argb: tabColor };
       
-      // If data is empty, we still want headers
       const displayData = data.length > 0 ? data : [{
         "Company Name": "", "Contact Person": "", "Designation": "", 
-        "Contact Number": "", "Email": "", "Industry": "", "Country": "", 
+        "Contact Mobile": "", "Contact Telephone": "", "Email": "", "Industry": "", "Country": "", 
         "Status": "", "Source File": "", "Joined/Updated": "", 
         "LinkedIn": "", "Website": ""
       }];
@@ -187,19 +187,22 @@ export function StatusView({
       const { supabase } = await import("../../lib/supabase/client");
       const { error } = await supabase
         .from('company_contacts')
-        .update({ status: newStatus })
-        .eq('company_name', selectedCompany.name);
+        .update({ 
+          status: newStatus,
+          status_updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedCompany.id);
 
       if (error) {
         console.error("Status update error:", error);
       }
 
       if (setCompanies) {
-        setCompanies(prev => prev.map(item => item.name === selectedCompany.name ? { ...item, status: newStatus } : item));
+        setCompanies(prev => prev.map(item => item.id === selectedCompany.id ? { ...item, status: newStatus } : item));
       }
 
       window.dispatchEvent(new CustomEvent('companyStatusUpdated', {
-        detail: { companyName: selectedCompany.name, status: newStatus }
+        detail: { companyId: selectedCompany.id, status: newStatus }
       }));
 
       showToast(`Status changed to ${newStatus} for ${selectedCompany.name}!`);
@@ -459,9 +462,16 @@ export function StatusView({
               </div>
 
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">Contact Number</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">Mobile / Direct</span>
                 <p className="text-sm font-bold text-gray-700 dark:text-gray-300 font-mono">
-                  {selectedCompany.contactNumber || "Not Provided"}
+                  {selectedCompany.contactMobile || "Not Provided"}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">Telephone</span>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 font-mono">
+                  {selectedCompany.contactTelephone || "Not Provided"}
                 </p>
               </div>
 
@@ -515,29 +525,37 @@ export function StatusView({
             </div>
 
             {/* Offer Decision Action Buttons (Accepted / Rejected) */}
-            <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex flex-col sm:flex-row items-center gap-3 justify-end">
-              <button
-                disabled={isUpdating || selectedCompany.status === "Rejected"}
-                onClick={() => handleUpdateStatus("Rejected")}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                {selectedCompany.status === "Rejected" ? "Already Rejected" : "Rejected Offer"}
-              </button>
+            {selectedCompany.status && selectedCompany.status !== "Not Active" ? (
+              <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex flex-col sm:flex-row items-center gap-3 justify-end">
+                <button
+                  disabled={isUpdating || selectedCompany.status === "Rejected"}
+                  onClick={() => handleUpdateStatus("Rejected")}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  {selectedCompany.status === "Rejected" ? "Already Rejected" : "Rejected Offer"}
+                </button>
 
-              <button
-                disabled={isUpdating || selectedCompany.status === "Accepted"}
-                onClick={() => handleUpdateStatus("Accepted")}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-[#046241] hover:bg-[#034d33] active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-[#046241]/20 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                {selectedCompany.status === "Accepted" ? "Already Accepted" : "Accepted Offer"}
-              </button>
-            </div>
+                <button
+                  disabled={isUpdating || selectedCompany.status === "Accepted"}
+                  onClick={() => handleUpdateStatus("Accepted")}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-[#046241] hover:bg-[#034d33] active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-[#046241]/20 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {selectedCompany.status === "Accepted" ? "Already Accepted" : "Accepted Offer"}
+                </button>
+              </div>
+            ) : (
+              <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex items-center justify-center">
+                <p className="text-xs font-bold text-gray-400">
+                  This lead is Not Active. Process it from the Leads tab first.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

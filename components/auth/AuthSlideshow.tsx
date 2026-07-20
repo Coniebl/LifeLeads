@@ -5,24 +5,28 @@ export function AuthSlideshow() {
 
   const slides = [
     {
-      src: "/assets/slideshow1.png",
-      alt: "Business professionals collaborating",
-      title: "Empowering Secure Client Relationships and Growth with LifeLead."
+      src: "/assets/lead_gen_meeting.jpg",
+      alt: "Admin and clients meeting for lead generation",
+      title: "Cultivate Connections",
+      description: "Build lasting relationships with prospective clients."
     },
     {
-      src: "/assets/slideshow2.png",
-      alt: "Secure database and server infrastructure",
-      title: "State-of-the-art security protecting your valuable client records."
+      src: "/assets/lead_gen_analytics.jpg",
+      alt: "Lead generation analytics dashboard",
+      title: "Data-Driven Growth",
+      description: "Leverage intelligent analytics to capture every lead."
     },
     {
-      src: "/assets/slideshow3.png",
-      alt: "Analytics dashboard monitoring leads",
-      title: "Real-time client monitoring and intelligent lead analytics."
+      src: "/assets/lead_gen_strategy.jpg",
+      alt: "Team working on lead conversion strategies",
+      title: "Strategic Conversion",
+      description: "Empower your team with tools that turn prospects into partners."
     },
     {
-      src: "/assets/slideshow4.png",
-      alt: "Client relationship growth meeting",
-      title: "Streamline workflows and accelerate your company's potential."
+      src: "/assets/lead_gen_success.jpg",
+      alt: "Successful lead conversion handshake",
+      title: "Seamless Onboarding",
+      description: "Ensure every new lead feels valued from the very first interaction."
     }
   ];
 
@@ -51,11 +55,14 @@ export function AuthSlideshow() {
           {/* Dark gradient overlay for modern aesthetic & readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
           
-          {/* Minimal Text Overlay */}
-          <div className="absolute bottom-20 left-12 right-12 transition-all duration-500">
-            <h2 className="text-xl lg:text-2xl font-medium text-white/90 leading-snug tracking-wide drop-shadow-lg">
+          {/* Minimalist Text Overlay */}
+          <div className="absolute bottom-24 left-12 right-12 transition-all duration-500">
+            <h2 className="text-2xl lg:text-3xl font-light text-white/95 tracking-wider drop-shadow-md mb-2">
               {slide.title}
             </h2>
+            <p className="text-sm lg:text-base font-extralight text-white/80 tracking-wide drop-shadow-sm max-w-md">
+              {slide.description}
+            </p>
           </div>
         </div>
       ))}
