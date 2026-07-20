@@ -54,7 +54,7 @@ export function CompanyCard({ company, onClick }: { company: CompanyData; onClic
           </span>
         </div>
 
-        <h3 className="font-bold text-[#133020] dark:text-white text-lg mb-2 truncate group-hover:text-clip group-hover:whitespace-normal transition-all" title={company.name}>
+        <h3 className="font-bold text-[#133020] dark:text-white text-lg mb-2 leading-tight" title={company.name}>
           {company.name}
         </h3>
         
