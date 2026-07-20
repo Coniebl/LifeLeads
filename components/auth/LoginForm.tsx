@@ -77,7 +77,10 @@ export function LoginForm() {
       
       localStorage.setItem("lifelead-user", JSON.stringify({
         email: data.user.email,
-        name: data.user.user_metadata?.full_name || data.user.email?.split("@")[0].split(".").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+        name: data.user.user_metadata?.first_name 
+            ? `${data.user.user_metadata.first_name} ${data.user.user_metadata.last_name || ''}`.trim()
+            : data.user.user_metadata?.full_name || data.user.email?.split("@")[0].split(".").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+        role: data.user.user_metadata?.role || "user"
       }));
       
       setIsLoading(false);

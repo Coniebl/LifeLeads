@@ -12,6 +12,7 @@ export function DashboardGreetingCard() {
   const [displayYear, setDisplayYear] = useState<number | null>(null);
   const [displayMonth, setDisplayMonth] = useState<number | null>(null);
   const [localExports, setLocalExports] = useState<any[]>([]);
+  const [localDeletedImports, setLocalDeletedImports] = useState<any[]>([]);
 
   useEffect(() => {
     const now = new Date();
@@ -48,17 +49,20 @@ export function DashboardGreetingCard() {
       setSessionDuration(currentDuration);
     }, 1000);
 
-    const loadExports = () => {
+    const loadLocalData = () => {
       try {
         setLocalExports(JSON.parse(localStorage.getItem('lifelead_exports') || '[]'));
+        setLocalDeletedImports(JSON.parse(localStorage.getItem('lifelead_deleted_imports') || '[]'));
       } catch (e) {}
     };
-    loadExports();
-    window.addEventListener('lifelead_export', loadExports);
+    loadLocalData();
+    window.addEventListener('lifelead_export', loadLocalData);
+    window.addEventListener('lifelead_deleted_import', loadLocalData);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('lifelead_export', loadExports);
+      window.removeEventListener('lifelead_export', loadLocalData);
+      window.removeEventListener('lifelead_deleted_import', loadLocalData);
     };
   }, []);
 
@@ -67,6 +71,7 @@ export function DashboardGreetingCard() {
     
     const events: Record<number, { imports: { companies: number, fcos: number }, exports: { companies: number, fcos: number } }> = {};
     
+    // Process current live records
     rawRecords.forEach(r => {
       if (!r.created_at) return;
       const date = new Date(r.created_at);
@@ -83,6 +88,23 @@ export function DashboardGreetingCard() {
       }
     });
 
+    // Process deleted imports to restore their counts on the calendar
+    localDeletedImports.forEach(di => {
+      if (!di.date) return;
+      const date = new Date(di.date);
+      if (date.getFullYear() === displayYear && date.getMonth() === displayMonth) {
+        const day = date.getDate();
+        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 } };
+        
+        if (di.category === "Filipino Community Organizations") {
+          events[day].imports.fcos += 1;
+        } else {
+          events[day].imports.companies += 1;
+        }
+      }
+    });
+
+    // Process exports
     localExports.forEach((ex: any) => {
       const date = new Date(ex.date);
       if (date.getFullYear() === displayYear && date.getMonth() === displayMonth) {
@@ -98,7 +120,7 @@ export function DashboardGreetingCard() {
     });
 
     return events;
-  }, [rawRecords, displayYear, displayMonth, localExports]);
+  }, [rawRecords, displayYear, displayMonth, localExports, localDeletedImports]);
 
   if (!currentTime || displayMonth === null || displayYear === null) return null; // Avoid hydration mismatch
 
@@ -184,13 +206,13 @@ export function DashboardGreetingCard() {
             >
               <span 
                 className={`glitch-idle-active ${isGlitching ? "opacity-0" : "opacity-100 transition-opacity duration-200"}`}
-                data-text="Admin."
+                data-text={`${user?.role === 'admin' ? 'Admin' : 'User'}.`}
               >
-                Admin.
+                {user?.role === 'admin' ? 'Admin' : 'User'}.
               </span>
               {isGlitching && (
                 <span className="absolute top-0 left-0 pointer-events-none whitespace-nowrap z-10">
-                  <span className="glitch-active inline-block" data-text={`${firstName}.`}>{firstName}.</span>
+                  <span className="glitch-active inline-block" data-text={firstName}>{firstName}</span>
                 </span>
               )}
             </span>
@@ -257,19 +279,19 @@ export function DashboardGreetingCard() {
                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-white/10 pb-1.5 mb-1.5">
                         {monthNames[displayMonth]} {day}, {displayYear}
                       </p>
-                      {calendarEvents[day].imports.companies > 0 && <div className="text-xs font-bold text-[#ccff00]">+ {calendarEvents[day].imports.companies} Companies Imp.</div>}
-                      {calendarEvents[day].imports.fcos > 0 && <div className="text-xs font-bold text-[#ffb347]">+ {calendarEvents[day].imports.fcos} Orgs Imp.</div>}
-                      {calendarEvents[day].exports.companies > 0 && <div className="text-xs font-bold text-[#3b82f6]">- {calendarEvents[day].exports.companies} Companies Exp.</div>}
-                      {calendarEvents[day].exports.fcos > 0 && <div className="text-xs font-bold text-[#ec4899]">- {calendarEvents[day].exports.fcos} Orgs Exp.</div>}
+                      <div className="text-xs font-bold text-[#ccff00]">+ {calendarEvents[day].imports.companies} Companies Imp.</div>
+                      <div className="text-xs font-bold text-[#ffb347]">+ {calendarEvents[day].imports.fcos} Orgs Imp.</div>
+                      <div className="text-xs font-bold text-[#3b82f6]">- {calendarEvents[day].exports.companies} Companies Exp.</div>
+                      <div className="text-xs font-bold text-[#ec4899]">- {calendarEvents[day].exports.fcos} Orgs Exp.</div>
                     </div>
                   )}
                   {/* Decorative dots from data */}
                   {day && calendarEvents[day] && (
                     <div className="absolute -bottom-1 flex flex-wrap justify-center gap-0.5 px-1 w-full pointer-events-none">
-                      {calendarEvents[day].imports.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#ccff00]"></span>}
-                      {calendarEvents[day].imports.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ffb347]"></span>}
-                      {calendarEvents[day].exports.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#3b82f6]"></span>}
-                      {calendarEvents[day].exports.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ec4899]"></span>}
+                      <span className="w-1 h-1 rounded-full bg-[#ccff00]"></span>
+                      <span className="w-1 h-1 rounded-full bg-[#ffb347]"></span>
+                      <span className="w-1 h-1 rounded-full bg-[#3b82f6]"></span>
+                      <span className="w-1 h-1 rounded-full bg-[#ec4899]"></span>
                     </div>
                   )}
                 </div>
