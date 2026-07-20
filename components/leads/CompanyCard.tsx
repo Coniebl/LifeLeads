@@ -8,7 +8,8 @@ export type CompanyData = {
   leads: number;
   contactPerson?: string;
   designation?: string;
-  contactNumber?: string;
+  contactMobile?: string;
+  contactTelephone?: string;
   email?: string;
   linkedin?: string;
   website?: string;

@@ -94,7 +94,8 @@ export function StatusView({
         "Company Name": c.name,
         "Contact Person": c.contactPerson || "Not Provided",
         "Designation": c.designation || "Not Provided",
-        "Contact Number": c.contactNumber || "Not Provided",
+        "Contact Mobile": c.contactMobile || "Not Provided",
+        "Contact Telephone": c.contactTelephone || "Not Provided",
         "Email": c.email || "Not Provided",
         "Industry": c.industries.join(", "),
         "Country": c.country,
@@ -116,10 +117,9 @@ export function StatusView({
       const ws = wb.addWorksheet(name);
       ws.properties.tabColor = { argb: tabColor };
       
-      // If data is empty, we still want headers
       const displayData = data.length > 0 ? data : [{
         "Company Name": "", "Contact Person": "", "Designation": "", 
-        "Contact Number": "", "Email": "", "Industry": "", "Country": "", 
+        "Contact Mobile": "", "Contact Telephone": "", "Email": "", "Industry": "", "Country": "", 
         "Status": "", "Source File": "", "Joined/Updated": "", 
         "LinkedIn": "", "Website": ""
       }];
@@ -462,9 +462,16 @@ export function StatusView({
               </div>
 
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">Contact Number</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">Mobile / Direct</span>
                 <p className="text-sm font-bold text-gray-700 dark:text-gray-300 font-mono">
-                  {selectedCompany.contactNumber || "Not Provided"}
+                  {selectedCompany.contactMobile || "Not Provided"}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">Telephone</span>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 font-mono">
+                  {selectedCompany.contactTelephone || "Not Provided"}
                 </p>
               </div>
 

@@ -10,6 +10,7 @@ export interface RecordData {
   contactPerson: string;
   email: string;
   phone: string;
+  telephone: string;
   status: RecordStatus;
   dateAdded: string;
   website?: string;
@@ -205,6 +206,7 @@ export function RecordsTable({ records }: RecordsTableProps) {
               </th>
               <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Contact Person</th>
               <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Phone</th>
+              <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Telephone</th>
               <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Links</th>
               <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
                 <div className="flex items-center">
@@ -223,7 +225,7 @@ export function RecordsTable({ records }: RecordsTableProps) {
           <tbody className="divide-y divide-gray-100 dark:divide-white/5">
             {paginatedRecords.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-16 text-center text-sm font-bold text-gray-400">
+                <td colSpan={11} className="py-16 text-center text-sm font-bold text-gray-400">
                   No records matching the selected criteria.
                 </td>
               </tr>
@@ -271,7 +273,10 @@ export function RecordsTable({ records }: RecordsTableProps) {
                     </div>
                   </td>
                   <td className="py-4 px-6 text-xs font-mono font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    {record.phone || "Not Provided"}
+                    {record.phone}
+                  </td>
+                  <td className="py-4 px-6 text-xs font-mono font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                    {record.telephone}
                   </td>
                   <td className="py-4 px-6 whitespace-nowrap">
                     <div className="flex items-center gap-2">
