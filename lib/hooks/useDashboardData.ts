@@ -40,6 +40,7 @@ export function useDashboardData() {
   });
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [leadsType, setLeadsType] = useState("All Leads");
+  const [dashboardSelectedFile, setDashboardSelectedFile] = useState("All Files");
   const [rawRecords, setRawRecords] = useState<any[] | null>(null);
 
 
@@ -58,6 +59,7 @@ export function useDashboardData() {
     acceptedCount: 0,
     pendingCount: 0,
     rejectedCount: 0,
+    respondedCount: 0,
     inactiveCount: 0,
     totalLeads: 0,
     totalCountries: 0,
@@ -117,7 +119,7 @@ export function useDashboardData() {
 
     try {
       // Apply Leads Type Filter
-      const records = rawRecords.filter(r => {
+      const baseRecords = rawRecords.filter(r => {
         if (leadsType === "All Leads") return true;
         
         const inferredCat = r.category || "Companies";
@@ -126,31 +128,61 @@ export function useDashboardData() {
         return inferredCat === "Companies";
       });
 
+      const uniqueSources = new Set<string>();
+      baseRecords.forEach(r => {
+        if (r.source_file && r.source_file.trim() !== "") {
+          uniqueSources.add(r.source_file.trim());
+        }
+      });
+      setAvailableFiles(Array.from(uniqueSources).sort());
+
+      const allNames = Array.from(new Set(baseRecords.map(r => r.company_name?.trim()).filter(Boolean)));
+      setAllCompanyNames(allNames);
+
+      const records = baseRecords.filter(r => {
+        if (dashboardSelectedFile === "All Files") return true;
+        return r.source_file?.trim() === dashboardSelectedFile;
+      });
+
       let pendingCount = 0;
       let acceptedCount = 0;
       let rejectedCount = 0;
+      let respondedCount = 0;
       let inactiveCount = 0;
 
       const uniqueCountries = new Set<string>();
       const uniqueIndustries = new Set<string>();
-      const uniqueSources = new Set<string>();
       const countryMap: Record<string, { count: number; companies: string[] }> = {};
       const industryCountMap: Record<string, number> = {};
       const monthlyAccepted = Array(12).fill(0);
       const monthlyRejected = Array(12).fill(0);
 
       records.forEach((record) => {
-        if (record.source_file && record.source_file.trim() !== "") {
-          uniqueSources.add(record.source_file.trim());
-        }
 
         const status = record.status || "Not Active";
         if (status === "Pending") pendingCount++;
         else if (status === "Accepted") acceptedCount++;
         else if (status === "Rejected") rejectedCount++;
+        else if (status === "Responded") respondedCount++;
         else inactiveCount++;
 
-        const country = record.country?.trim() || "Unknown";
+        const rawCountry = record.country || "Unknown";
+        let country = rawCountry.trim();
+        
+        // Extract country from "City, Country" format
+        if (country.includes(',')) {
+          const parts = country.split(',');
+          country = parts[parts.length - 1].trim();
+        }
+        
+        // Normalize common aliases
+        const lowerCountry = country.toLowerCase();
+        if (lowerCountry === 'uk' || lowerCountry === 'scotland' || lowerCountry === 'scotland(uk)' || lowerCountry === 'england' || lowerCountry === 'wales') {
+          country = 'United Kingdom';
+        } else if (lowerCountry === 'us' || lowerCountry === 'u.s.' || lowerCountry === 'u.s.a') {
+          country = 'USA';
+        }
+
         uniqueCountries.add(country);
         
         const name = record.company_name?.trim() || "Unknown Company";
@@ -184,18 +216,13 @@ export function useDashboardData() {
       });
 
       const total = records.length;
-      
-      // We want to extract unique names for autocomplete or other things if necessary
-      const allNames = Array.from(new Set(records.map(r => r.company_name?.trim()).filter(Boolean)));
-      
-      setAvailableFiles(Array.from(uniqueSources).sort());
-      setAllCompanyNames(allNames);
 
         setStats({
           totalCompanies: total,
           acceptedCount,
           pendingCount,
           rejectedCount,
+          respondedCount,
           inactiveCount,
           totalLeads: total,
           totalCountries: uniqueCountries.size,
@@ -240,7 +267,7 @@ export function useDashboardData() {
     } catch (err) {
       console.error("Data processing failed:", err);
     }
-  }, [rawRecords, leadsType]);
+  }, [rawRecords, leadsType, dashboardSelectedFile]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -262,6 +289,8 @@ export function useDashboardData() {
     allCompanyNames,
     leadsType,
     setLeadsType,
+    dashboardSelectedFile,
+    setDashboardSelectedFile,
     rawRecords,
   };
 }

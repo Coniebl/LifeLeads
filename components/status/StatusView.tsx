@@ -137,6 +137,7 @@ export function StatusView({
     const allData = generateExportData(filteredCompanies);
     const notActiveData = generateExportData(filteredCompanies.filter(c => !c.status || c.status === "Not Active"));
     const pendingData = generateExportData(filteredCompanies.filter(c => c.status === "Pending"));
+    const respondedData = generateExportData(filteredCompanies.filter(c => c.status === "Responded"));
     const acceptedData = generateExportData(filteredCompanies.filter(c => c.status === "Accepted"));
     const rejectedData = generateExportData(filteredCompanies.filter(c => c.status === "Rejected"));
 
@@ -183,6 +184,7 @@ export function StatusView({
     addSheet(allData, "All", "FF046241"); // Lifewood Green
     addSheet(notActiveData, "Not Active", "FF9CA3AF"); // Gray
     addSheet(pendingData, "Pending", "FFF59E0B"); // Orange
+    addSheet(respondedData, "Responded", "FF0D9488"); // Blue Green
     addSheet(acceptedData, "Accepted", "FF10B981"); // Bright Green
     addSheet(rejectedData, "Rejected", "FFEF4444"); // Red
 
@@ -204,7 +206,7 @@ export function StatusView({
       console.error("Failed to log export", e);
     }
     
-    showToast(`Exported ${filteredCompanies.length} records across 5 sheets!`);
+    showToast(`Exported ${filteredCompanies.length} records across 6 sheets!`);
   };
 
   const handleUpdateStatus = async (newStatus: "Accepted" | "Rejected" | "Responded") => {
