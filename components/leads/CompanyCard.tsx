@@ -15,7 +15,7 @@ export type CompanyData = {
   website?: string;
   source?: string;
   category?: "Companies" | "Filipino Community Organizations";
-  status?: "Pending" | "Processing" | "Accepted" | "Rejected" | "Not Active";
+  status?: "Pending" | "Processing" | "Responded" | "Accepted" | "Rejected" | "Not Active";
   updatedAt?: string;
 };
 

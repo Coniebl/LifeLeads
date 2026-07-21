@@ -23,7 +23,6 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   const [isComposingEmail, setIsComposingEmail] = useState(false);
   const [hasSentEmail, setHasSentEmail] = useState(false);
   const [emailBody, setEmailBody] = useState("");
-  const [showEmailProviders, setShowEmailProviders] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -38,7 +37,6 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
       setIsComposingEmail(false);
       setHasSentEmail(false);
       setEmailBody("");
-      setShowEmailProviders(false);
       setSelectedTemplate(null);
     }
   }, [selectedCompany?.name]);
@@ -102,7 +100,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     showToast("Extracted & copied email text to clipboard!");
   };
 
-  const handleProviderSend = (provider: "gmail" | "outlook" | "yahoo" | "default") => {
+  const handleProviderSend = async (provider: "gmail" | "outlook" | "yahoo" | "default") => {
     setHasSentEmail(true);
 
     const recipient = selectedCompany?.email || "";
@@ -134,7 +132,21 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     }
 
     setIsComposingEmail(false);
-    setShowEmailProviders(false);
+
+    // Automatically process lead to Pending after sending email
+    if (selectedCompany && selectedCompany.status !== "Pending") {
+      try {
+        await supabase.from('company_contacts').update({ 
+          status: 'Pending',
+          status_updated_at: new Date().toISOString()
+        }).eq('id', selectedCompany.id);
+        
+        setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? { ...c, status: "Pending" } : c));
+        showToast(`${selectedCompany.name} moved to Pending status!`);
+      } catch (err) {
+        console.error("Failed to update status to Pending", err);
+      }
+    }
   };
 
   const handleManualContact = () => {
@@ -441,79 +453,34 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
                 {/* Bottom Actions: Extract Text on Left, Send on Right */}
                 <div className="flex flex-col gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
-                  {showEmailProviders ? (
-                    <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
-                        Select Email Platform
-                      </span>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <button
-                          onClick={() => handleProviderSend("gmail")}
-                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 text-xs font-bold transition-colors"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 8.414l8.073-4.921c1.618-1.214 3.927-.059 3.927 1.964Z"/></svg>
-                          Gmail
-                        </button>
-                        <button
-                          onClick={() => handleProviderSend("outlook")}
-                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 text-xs font-bold transition-colors"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M1.38 6.55L14 2.76v18.42L1.38 17.45V6.55zM15 4.3v15.4h7.62V4.3H15zm2.86 10.93c-1.16 0-2.04-.9-2.04-2.12 0-1.23.88-2.13 2.04-2.13 1.15 0 2.03.9 2.03 2.13 0 1.22-.88 2.12-2.03 2.12zm0-1c.54 0 .9-.45.9-1.12 0-.66-.36-1.12-.9-1.12-.53 0-.9.46-.9 1.12 0 .67.37 1.12.9 1.12z" /></svg>
-                          Outlook
-                        </button>
-                        <button
-                          onClick={() => handleProviderSend("yahoo")}
-                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:hover:bg-purple-500/20 text-xs font-bold transition-colors"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22.46 5.56L13.88 18.2v5.8h-3.76v-5.8L1.54 5.56h4.15l6.32 10.3 6.32-10.3h4.13z"/></svg>
-                          Yahoo
-                        </button>
-                        <button
-                          onClick={() => handleProviderSend("default")}
-                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20 text-xs font-bold transition-colors"
-                          title="Apple Mail, Teams, or System Default"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                          Default App
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => setShowEmailProviders(false)}
-                        className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-center mt-1 transition-colors uppercase tracking-wider"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-3">
-                      <button
-                        onClick={handleCopyExtract}
-                        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-xs font-bold text-gray-700 dark:text-gray-200 transition-all"
-                        title="Extract and copy text to clipboard"
-                      >
-                        <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-                        </svg>
-                        Extract Text
-                      </button>
-  
-                      <button
-                        onClick={() => {
-                          if (!emailBody.trim()) {
-                            showToast("Please select a template or write an email first.");
-                            return;
-                          }
-                          setShowEmailProviders(true);
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#046241] to-[#ffb347] text-white font-black text-xs shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all"
-                      >
-                        Send Mail
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      onClick={handleCopyExtract}
+                      className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-xs font-bold text-gray-700 dark:text-gray-200 transition-all"
+                      title="Extract and copy text to clipboard"
+                    >
+                      <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                      </svg>
+                      Extract Text
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (!emailBody.trim()) {
+                          showToast("Please select a template or write an email first.");
+                          return;
+                        }
+                        handleProviderSend("outlook");
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#046241] to-[#ffb347] text-white font-black text-xs shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all"
+                    >
+                      Send Mail
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
