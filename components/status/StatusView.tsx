@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { type CompanyData } from "../leads/CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
@@ -14,18 +14,41 @@ export function StatusView({
 }) {
   const searchParams = useSearchParams();
   const selectedSubCategory = searchParams.get("category") || "Companies";
-  const [statusTab, setStatusTab] = useState<"Pending" | "Accepted" | "Rejected" | "Not Active">("Pending");
+  const [statusTab, setStatusTab] = useState<"Pending" | "Responded" | "Accepted" | "Rejected" | "Not Active">("Pending");
   const [selectedSource, setSelectedSource] = useState("All Records");
   const [selectedIndustry, setSelectedIndustry] = useState("All Industries");
   const [selectedCountry, setSelectedCountry] = useState("All Countries");
   const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  // Poll Outlook integration API for new replies every 1 minute
+  useEffect(() => {
+    const checkReplies = async () => {
+      try {
+        setIsSyncing(true);
+        const res = await fetch('/api/outlook/check-replies');
+        const data = await res.json();
+        if (data.success && data.message.includes('Updated') && !data.message.includes('0 leads')) {
+          window.location.reload(); 
+        }
+      } catch (err) {
+        console.error('Failed to sync outlook replies:', err);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    checkReplies();
+    const interval = setInterval(checkReplies, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // 1. Filter by Subcategory
   const subCategoryCompanies = companies.filter((c) => {
@@ -53,12 +76,14 @@ export function StatusView({
   const acceptedCount = filteredCompanies.filter(c => c.status === "Accepted").length;
   const rejectedCount = filteredCompanies.filter(c => c.status === "Rejected").length;
   const pendingCount = filteredCompanies.filter(c => c.status === "Pending").length;
+  const respondedCount = filteredCompanies.filter(c => c.status === "Responded").length;
   const inactiveCount = filteredCompanies.filter(c => !c.status || c.status === "Not Active").length;
 
-  // 5. Filter by active Status Pill (Pending, Accepted, Rejected, Not Active)
+  // 5. Filter by active Status Pill (Pending, Responded, Accepted, Rejected, Not Active)
   const tabulatedCompanies = filteredCompanies.filter(c => {
     if (statusTab === "Accepted") return c.status === "Accepted";
     if (statusTab === "Rejected") return c.status === "Rejected";
+    if (statusTab === "Responded") return c.status === "Responded";
     if (statusTab === "Not Active") return !c.status || c.status === "Not Active";
     return c.status === "Pending";
   });
@@ -73,6 +98,7 @@ export function StatusView({
       case "Accepted": return "text-[#046241] bg-[#046241]/10 border-[#046241]/20 dark:text-[#4ade80] dark:bg-[#4ade80]/10";
       case "Rejected": return "text-red-600 bg-red-100 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800";
       case "Pending": return "text-[#b45309] bg-[#ffb347]/15 border-[#ffb347]/30 dark:text-[#ffb347] dark:bg-[#ffb347]/10";
+      case "Responded": return "text-[#0d9488] bg-[#0d9488]/15 border-[#0d9488]/30 dark:text-[#2dd4bf] dark:bg-[#0d9488]/10";
       default: return "text-gray-600 bg-gray-100 border-gray-200 dark:text-gray-400 dark:bg-gray-800 dark:border-gray-700";
     }
   };
@@ -82,6 +108,7 @@ export function StatusView({
       case "Accepted": return "bg-[#046241]";
       case "Rejected": return "bg-red-600";
       case "Pending": return "bg-[#ffb347]";
+      case "Responded": return "bg-[#0d9488]";
       default: return "bg-gray-400 dark:bg-gray-500";
     }
   };
@@ -180,7 +207,7 @@ export function StatusView({
     showToast(`Exported ${filteredCompanies.length} records across 5 sheets!`);
   };
 
-  const handleUpdateStatus = async (newStatus: "Accepted" | "Rejected") => {
+  const handleUpdateStatus = async (newStatus: "Accepted" | "Rejected" | "Responded") => {
     if (!selectedCompany) return;
     setIsUpdating(true);
     try {
@@ -255,11 +282,12 @@ export function StatusView({
       </div>
 
       {/* Status Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         {[
           { label: "TOTAL", count: totalCount, color: "text-[#046241] dark:text-[#4ade80]", glow: "dark:border-[#4ade80] dark:shadow-[0_0_15px_rgba(74,222,128,0.25)]" },
           { label: "ACCEPTED", count: acceptedCount, color: "text-[#046241] dark:text-[#2dd4bf]", glow: "dark:border-[#2dd4bf] dark:shadow-[0_0_15px_rgba(45,212,191,0.25)]" },
           { label: "REJECTED", count: rejectedCount, color: "text-red-500 dark:text-red-400", glow: "dark:border-red-400 dark:shadow-[0_0_15px_rgba(248,113,113,0.25)]" },
+          { label: "RESPONDED", count: respondedCount, color: "text-[#0d9488] dark:text-[#2dd4bf]", glow: "dark:border-[#2dd4bf] dark:shadow-[0_0_15px_rgba(45,212,191,0.25)]" },
           { label: "PENDING", count: pendingCount, color: "text-[#ffb347] dark:text-[#ffb347]", glow: "dark:border-[#ffb347] dark:shadow-[0_0_15px_rgba(255,179,71,0.25)]" },
           { label: "NOT ACTIVE", count: inactiveCount, color: "text-gray-500 dark:text-gray-400", glow: "dark:border-gray-400 dark:shadow-[0_0_15px_rgba(156,163,175,0.25)]" },
         ].map((stat, idx) => (
@@ -272,13 +300,14 @@ export function StatusView({
 
 
 
-      {/* Classification Pills above tabulated display (Pending, Accepted, Rejected, Not Active) */}
+      {/* Classification Pills above tabulated display (Pending, Responded, Accepted, Rejected, Not Active) */}
       <div className="flex items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 pb-3">
         <div className="flex items-center gap-2">
-          {(["Not Active", "Pending", "Accepted", "Rejected"] as const).map((tab) => {
+          {(["Not Active", "Pending", "Responded", "Accepted", "Rejected"] as const).map((tab) => {
             const count = filteredCompanies.filter(c => {
               if (tab === "Accepted") return c.status === "Accepted";
               if (tab === "Rejected") return c.status === "Rejected";
+              if (tab === "Responded") return c.status === "Responded";
               if (tab === "Not Active") return !c.status || c.status === "Not Active";
               return c.status === "Pending";
             }).length;
@@ -293,13 +322,15 @@ export function StatusView({
                       ? "bg-[#046241] text-white shadow-md shadow-[#046241]/20 scale-105"
                       : tab === "Rejected"
                       ? "bg-red-600 text-white shadow-md shadow-red-600/20 scale-105"
+                      : tab === "Responded"
+                      ? "bg-[#0d9488] text-white shadow-md shadow-[#0d9488]/20 scale-105"
                       : tab === "Not Active"
                       ? "bg-gray-400 text-white shadow-md shadow-gray-400/20 scale-105"
                       : "bg-[#ffb347] text-[#133020] shadow-md shadow-[#ffb347]/20 scale-105"
                     : "bg-white dark:bg-[#14120e] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200 dark:border-white/5"
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${tab === "Accepted" ? "bg-emerald-300" : tab === "Rejected" ? "bg-red-300" : tab === "Not Active" ? "bg-gray-200" : "bg-[#133020]"}`}></span>
+                <span className={`w-2 h-2 rounded-full ${tab === "Accepted" ? "bg-emerald-300" : tab === "Rejected" ? "bg-red-300" : tab === "Responded" ? "bg-teal-300" : tab === "Not Active" ? "bg-gray-200" : "bg-[#133020]"}`}></span>
                 {tab}
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusTab === tab ? "bg-black/20 text-white" : "bg-gray-100 dark:bg-white/10 text-gray-500"}`}>
                   {count}
@@ -391,7 +422,7 @@ export function StatusView({
                 {/* Status */}
                 <div>
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold border ${getStatusColor(company.status || "Not Active")}`}>
-                    <span className={`w-2 h-2 rounded-full ${company.status === 'Accepted' ? 'bg-[#046241] dark:bg-[#4ade80]' : company.status === 'Rejected' ? 'bg-red-600' : company.status === 'Pending' ? 'bg-[#ffb347]' : 'bg-gray-400'}`} />
+                    <span className={`w-2 h-2 rounded-full ${company.status === 'Accepted' ? 'bg-[#046241] dark:bg-[#4ade80]' : company.status === 'Rejected' ? 'bg-red-600' : company.status === 'Responded' ? 'bg-[#0d9488] dark:bg-[#2dd4bf]' : company.status === 'Pending' ? 'bg-[#ffb347]' : 'bg-gray-400'}`} />
                     {company.status || "Not Active"}
                   </span>
                 </div>
@@ -524,30 +555,84 @@ export function StatusView({
               )}
             </div>
 
-            {/* Offer Decision Action Buttons (Accepted / Rejected) */}
+            {/* Offer Decision Action Buttons */}
             {selectedCompany.status && selectedCompany.status !== "Not Active" ? (
-              <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex flex-col sm:flex-row items-center gap-3 justify-end">
-                <button
-                  disabled={isUpdating || selectedCompany.status === "Rejected"}
-                  onClick={() => handleUpdateStatus("Rejected")}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  {selectedCompany.status === "Rejected" ? "Already Rejected" : "Rejected Offer"}
-                </button>
+              <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex flex-col sm:flex-row items-center gap-3 justify-between">
+                
+                {/* Left Side: Waiting for Response / Responded + View Button */}
+                <div className="flex items-center gap-2">
+                  {selectedCompany.status === "Pending" ? (
+                    <div className="group relative flex flex-col items-start">
+                      <div 
+                        onDoubleClick={async () => {
+                          // Developer Test Hook: Double click to simulate Outlook response
+                          try {
+                            setIsUpdating(true);
+                            await fetch('/api/outlook/mock-reply', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ companyId: selectedCompany.id })
+                            });
+                            
+                            // Update UI state seamlessly instead of reloading the page
+                            setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? { ...c, status: "Responded" } : c));
+                            setSelectedCompany(prev => prev ? { ...prev, status: "Responded" } : null);
+                            showToast("Simulated response received!");
+                          } finally {
+                            setIsUpdating(false);
+                          }
+                        }}
+                        className="px-4 py-2.5 rounded-xl font-bold text-xs text-gray-500 bg-gray-100 dark:bg-white/5 dark:text-gray-400 select-none cursor-pointer"
+                      >
+                        Waiting for response
+                      </div>
+                      <span className="absolute -bottom-6 left-0 text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        (Double-click to simulate Outlook reply for testing)
+                      </span>
+                    </div>
+                  ) : (selectedCompany.status === "Responded" || selectedCompany.status === "Accepted" || selectedCompany.status === "Rejected") ? (
+                    <button 
+                      onClick={() => window.open('https://outlook.live.com/mail/0/', '_blank')}
+                      className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-[#0d9488] hover:bg-teal-700 active:scale-95 transition-all shadow-md shadow-[#0d9488]/20 cursor-pointer" 
+                      title="View Response"
+                    >
+                      View Response
+                    </button>
+                  ) : null}
+                </div>
 
-                <button
-                  disabled={isUpdating || selectedCompany.status === "Accepted"}
-                  onClick={() => handleUpdateStatus("Accepted")}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-[#046241] hover:bg-[#034d33] active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md shadow-[#046241]/20 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  {selectedCompany.status === "Accepted" ? "Already Accepted" : "Accepted Offer"}
-                </button>
+                {/* Right Side: Accept / Reject Icons */}
+                <div className="flex items-center gap-3">
+                  <button
+                    disabled={isUpdating || selectedCompany.status === "Rejected" || selectedCompany.status === "Pending"}
+                    onClick={() => handleUpdateStatus("Rejected")}
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center text-white transition-all shadow-md shrink-0 ${
+                      selectedCompany.status === "Pending" 
+                        ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed shadow-none text-gray-500 dark:text-gray-500" 
+                        : "bg-red-600 hover:bg-red-700 active:scale-95 shadow-red-600/20 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                    }`}
+                    title={selectedCompany.status === "Pending" ? "Waiting for response" : selectedCompany.status === "Rejected" ? "Already Rejected" : "Rejected Offer"}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+
+                  <button
+                    disabled={isUpdating || selectedCompany.status === "Accepted" || selectedCompany.status === "Pending"}
+                    onClick={() => handleUpdateStatus("Accepted")}
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center text-white transition-all shadow-md shrink-0 ${
+                      selectedCompany.status === "Pending" 
+                        ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed shadow-none text-gray-500 dark:text-gray-500" 
+                        : "bg-[#046241] hover:bg-[#034d33] active:scale-95 shadow-[#046241]/20 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                    }`}
+                    title={selectedCompany.status === "Pending" ? "Waiting for response" : selectedCompany.status === "Accepted" ? "Already Accepted" : "Accepted Offer"}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="border-t border-gray-100 dark:border-white/10 pt-5 flex items-center justify-center">
