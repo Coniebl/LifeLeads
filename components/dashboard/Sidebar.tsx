@@ -101,10 +101,10 @@ export function Sidebar({
       {/* Top Branding Section */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3 px-3 relative border-b border-white/5 pb-3">
-          <div className="flex items-center justify-center bg-black/20 dark:bg-white/5 rounded-2xl border border-white/5 overflow-hidden px-1 py-1 h-14 w-full transition-all duration-300">
+          <div className="flex items-center justify-center bg-white rounded-2xl border border-white/5 overflow-hidden px-1 py-1 h-14 w-full transition-all duration-300">
             {isExpanded ? (
               <img 
-                src="/new-top-logo.png" 
+                src="/lifeleads-logo.png" 
                 alt="LifeLeads Logo" 
                 className="w-full h-full object-contain scale-[1.4] transition-all duration-300"
               />
@@ -217,7 +217,7 @@ export function Sidebar({
       {/* Bottom Profile & Lifewood Branding Section */}
       <div className="flex flex-col gap-3 mb-3 px-3">
         {/* Lifewood Logo right above the user name */}
-        <div className="flex items-center justify-center px-2 py-2 bg-black/20 dark:bg-white/5 rounded-xl border border-white/5 h-12 overflow-hidden relative w-full">
+        <div className="flex items-center justify-center px-2 py-2 bg-white rounded-xl border border-white/5 h-12 overflow-hidden relative w-full">
           {isExpanded ? (
             <div className="relative h-full flex items-center justify-center">
               {/* Text part (Green neon) */}
@@ -226,7 +226,6 @@ export function Sidebar({
                 alt="Lifewood Logo Text" 
                 className={`h-full w-auto object-contain transition-all duration-300 pointer-events-none`}
                 style={{ 
-                  filter: isDarkMode ? 'brightness(0) invert(1) drop-shadow(0 0 2px rgba(255,255,255,0.5))' : 'none',
                   clipPath: 'inset(0 0 0 12.5%)'
                 }}
                 suppressHydrationWarning
@@ -237,7 +236,6 @@ export function Sidebar({
                 alt="Lifewood Logo Diamond" 
                 className={`absolute top-0 left-0 h-full w-auto object-contain transition-all duration-300 pointer-events-none`}
                 style={{ 
-                  filter: isDarkMode ? 'brightness(0) saturate(100%) invert(78%) sepia(35%) saturate(1478%) hue-rotate(331deg) brightness(102%) contrast(101%) drop-shadow(0 0 6px rgba(255, 179, 71, 0.8))' : 'none',
                   clipPath: 'inset(0 87.5% 0 0)'
                 }}
                 suppressHydrationWarning
@@ -248,7 +246,7 @@ export function Sidebar({
               src="/lifewood-logo.png" 
               alt="LW" 
               className={`h-full w-[16px] object-cover object-left scale-[1.35] origin-left transition-all duration-300`}
-              style={{ filter: isDarkMode ? 'brightness(0) saturate(100%) invert(78%) sepia(35%) saturate(1478%) hue-rotate(331deg) brightness(102%) contrast(101%) drop-shadow(0 0 6px rgba(255, 179, 71, 0.8))' : 'none' }}
+              style={{ filter: 'none' }}
               suppressHydrationWarning
             />
           )}
