@@ -19,10 +19,11 @@ export default function DashboardPage() {
     allCompanyNames,
     leadsType,
     setLeadsType,
+    dashboardSelectedFile,
+    setDashboardSelectedFile,
   } = useDashboardContext();
 
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedFile, setSelectedFile] = React.useState("All Files");
 
   const formattedDate = () => {
     return new Date().toLocaleDateString("en-US", {
@@ -55,8 +56,8 @@ export default function DashboardPage() {
         <DashboardHeader 
           searchQuery={searchQuery} 
           setSearchQuery={setSearchQuery}
-          selectedFile={selectedFile}
-          setSelectedFile={setSelectedFile}
+          selectedFile={dashboardSelectedFile}
+          setSelectedFile={setDashboardSelectedFile}
           availableFiles={availableFiles}
           allCompanyNames={allCompanyNames}
           leadsType={leadsType}
@@ -72,8 +73,8 @@ export default function DashboardPage() {
             {/* Monthly Offers Chart */}
             <div className="flex-[2]">
               <MonthlyOffersChart 
-                selectedFile={selectedFile} 
-                hasData={stats.acceptedOfferCount > 0 || stats.rejectedCount > 0} 
+                selectedFile={dashboardSelectedFile} 
+                hasData={stats.acceptedOfferCount > 0 || stats.rejectedCount > 0 || stats.respondedCount > 0} 
                 monthlyAccepted={stats.monthlyAccepted}
                 monthlyRejected={stats.monthlyRejected}
               />
