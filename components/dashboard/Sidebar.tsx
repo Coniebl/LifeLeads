@@ -266,8 +266,8 @@ export function Sidebar({
                 <span className="text-xs font-bold truncate text-white">
                   {mounted && user ? user.name : "Loading..."}
                 </span>
-                <span className="text-[10px] text-gray-300 dark:text-white/60 leading-none mt-0.5">
-                  Administrator
+                <span className="text-[10px] text-gray-300 dark:text-white/60 leading-none mt-0.5 capitalize">
+                  {user?.role === 'admin' ? 'Administrator' : 'Standard User'}
                 </span>
               </div>
             )}

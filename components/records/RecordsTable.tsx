@@ -17,6 +17,7 @@ export interface RecordData {
   linkedin?: string;
   sourceFile: string;
   category?: "Companies" | "Filipino Community Organizations";
+  createdAt?: string;
 }
 
 interface RecordsTableProps {

@@ -48,6 +48,7 @@ export default function RecordsPage() {
           linkedin: r.company_linkedin || "",
           sourceFile: r.source_file || "Manual Entry",
           category: inferredCat,
+          createdAt: r.created_at,
         };
       });
       setRecords(formatted);
@@ -142,7 +143,16 @@ export default function RecordsPage() {
     reader.readAsBinaryString(file);
   };
 
-  const availableFiles = Array.from(new Set(records.map((r) => r.sourceFile).filter(Boolean)));
+  const availableFiles = Array.from(new Set(
+    records
+      .filter((r) => {
+        if (categoryFilter === "All") return true;
+        if (categoryFilter === "Companies") return !r.category || r.category === "Companies";
+        return r.category === "Filipino Community Organizations";
+      })
+      .map((r) => r.sourceFile)
+      .filter(Boolean)
+  ));
 
   const formattedDate = () => {
     return new Date().toLocaleDateString("en-US", {
@@ -201,6 +211,22 @@ export default function RecordsPage() {
   };
 
   const handleDeleteCompletedFiles = async (filesToDelete: string[]) => {
+    try {
+      const recordsToDelete = records.filter(r => filesToDelete.includes(r.sourceFile));
+      const deletedImports = JSON.parse(localStorage.getItem('lifelead_deleted_imports') || '[]');
+      
+      recordsToDelete.forEach(r => {
+        deletedImports.push({
+          date: r.createdAt || r.dateAdded,
+          category: r.category || "Companies"
+        });
+      });
+      localStorage.setItem('lifelead_deleted_imports', JSON.stringify(deletedImports));
+      window.dispatchEvent(new Event('lifelead_deleted_import'));
+    } catch(e) {
+      console.error("Failed to log deleted imports", e);
+    }
+
     const { error } = await supabase.from('company_contacts').delete().in('source_file', filesToDelete);
     
     if (!error) {

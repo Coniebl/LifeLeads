@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../supabase/client";
 
-export type DashboardUser = { email: string; name: string };
+export type DashboardUser = { email: string; name: string; role?: string };
 
 export type CountryData = {
   count: number;
