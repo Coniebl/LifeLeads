@@ -5,6 +5,7 @@ import * as xlsx from "xlsx";
 import { supabase, fetchAllCompanyContacts } from "../../lib/supabase/client";
 import { RecordsTable, type RecordData } from "../../components/records/RecordsTable";
 import { CompletedFilesModal } from "../../components/records/CompletedFilesModal";
+import { ScanClientsModal } from "../../components/records/ScanClientsModal";
 import { CustomSelect } from "../../components/ui/CustomSelect";
 import { SelectDropdown } from "../../components/ui/SelectDropdown";
 
@@ -13,6 +14,7 @@ export default function RecordsPage() {
   const [records, setRecords] = useState<RecordData[]>([]);
   const [completedFiles, setCompletedFiles] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState("All Files");
   const [isImporting, setIsImporting] = useState(false);
@@ -281,6 +283,15 @@ export default function RecordsPage() {
               className="hidden"
             />
             <button 
+              onClick={() => setIsScanModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#046241] to-[#ffb347] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              Scan for Clients
+            </button>
+            <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={isImporting}
               className="flex items-center gap-2 px-6 py-3 bg-[#046241] hover:bg-[#034d33] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
@@ -431,6 +442,15 @@ export default function RecordsPage() {
           completedFiles={completedFiles}
           onClose={() => setIsModalOpen(false)}
           onDeleteFiles={handleDeleteCompletedFiles}
+        />
+      )}
+
+      {isScanModalOpen && (
+        <ScanClientsModal
+          onClose={() => setIsScanModalOpen(false)}
+          onScanComplete={fetchRecords}
+          importCategory={selectedImportCategory}
+          existingCompanyNames={records.map(r => r.companyName.toLowerCase())}
         />
       )}
     </>
