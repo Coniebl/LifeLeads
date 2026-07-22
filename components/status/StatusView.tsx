@@ -577,7 +577,9 @@ export function StatusView({
                             });
                             
                             // Update UI state seamlessly instead of reloading the page
-                            setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? { ...c, status: "Responded" } : c));
+                            if (setCompanies) {
+                              setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? { ...c, status: "Responded" } : c));
+                            }
                             setSelectedCompany(prev => prev ? { ...prev, status: "Responded" } : null);
                             showToast("Simulated response received!");
                           } finally {

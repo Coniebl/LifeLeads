@@ -13,39 +13,68 @@ interface ScanClientsModalProps {
 
 const predefinedIndustries = [
   "All",
-  "E-Commerce",
-  "FinTech",
-  "EdTech",
-  "MedTech",
-  "B2B SaaS",
-  "HealthTech",
-  "Business Services",
-  "Real Estate",
-  "Manufacturing"
+  "information technology & services", "construction", "marketing & advertising", "real estate", "health, wellness & fitness", "management consulting", "computer software", "internet", "retail", "financial services", "consumer services", "hospital & health care", "automotive", "restaurants", "education management", "food & beverages", "design", "hospitality", "accounting", "events services", "nonprofit organization management", "entertainment", "electrical/electronic manufacturing", "leisure, travel & tourism", "professional training & coaching", "transportation/trucking/railroad", "law practice", "apparel & fashion", "architecture & planning", "mechanical or industrial engineering", "insurance", "telecommunications", "human resources", "staffing & recruiting", "sports", "legal services", "oil & energy", "media production", "machinery", "wholesale", "consumer goods", "music", "photography", "medical practice", "cosmetics", "environmental services", "graphic design", "business supplies & equipment", "renewables & environment", "facilities services", "publishing", "food production", "arts & crafts", "building materials", "civil engineering", "religious institutions", "public relations & communications", "higher education", "printing", "furniture", "mining & metals", "logistics & supply chain", "research", "pharmaceuticals", "individual & family services", "medical devices", "civic & social organization", "e-learning", "security & investigations", "chemicals", "government administration", "online media", "investment management", "farming", "writing & editing", "textiles", "mental health care", "primary/secondary education", "broadcast media", "biotechnology", "information services", "international trade & development", "motion pictures & film", "consumer electronics", "banking", "import & export", "industrial automation", "recreational facilities & services", "performing arts", "utilities", "sporting goods", "fine art", "airlines/aviation", "computer & network security", "maritime", "luxury goods & jewelry", "veterinary", "venture capital & private equity", "wine & spirits", "plastics", "aviation & aerospace", "commercial real estate", "computer games", "packaging & containers", "executive office", "computer hardware", "computer networking", "market research", "outsourcing/offshoring", "program development", "translation & localization", "philanthropy", "public safety", "alternative medicine", "museums & institutions", "warehousing", "defense & space", "newspapers", "paper & forest products", "law enforcement", "investment banking", "government relations", "fund-raising", "think tanks", "glass, ceramics & concrete", "capital markets", "semiconductors", "animation", "political organization", "package/freight delivery", "wireless", "international affairs", "public policy", "libraries", "gambling & casinos", "railroad manufacture", "ranching", "military", "fishery", "supermarkets", "dairy", "tobacco", "shipbuilding", "judiciary", "alternative dispute resolution", "nanotechnology", "agriculture", "legislative office"
 ];
 
 export function ScanClientsModal({ onClose, onScanComplete, importCategory, existingCompanyNames }: ScanClientsModalProps) {
   const [location, setLocation] = useState("");
+  const [predictiveLocations, setPredictiveLocations] = useState<string[]>([]);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(["All"]);
   const [isOthersSelected, setIsOthersSelected] = useState(false);
   const [customIndustries, setCustomIndustries] = useState("");
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const locationRef = useRef<HTMLDivElement>(null);
   
   const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState("");
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
-    };
+      if (locationRef.current && !locationRef.current.contains(event.target as Node)) {
+        setShowLocationSuggestions(false);
+      }
+    }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Fetch predictive locations when typing
+  useEffect(() => {
+    if (location.trim().length < 2) {
+      setPredictiveLocations([]);
+      return;
+    }
+    
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=5`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results) {
+            const places = data.results.map((r: any) => {
+              if (r.admin1 && r.country) return `${r.name}, ${r.admin1}, ${r.country}`;
+              if (r.country) return `${r.name}, ${r.country}`;
+              return r.name;
+            });
+            // Ensure unique names
+            setPredictiveLocations(Array.from(new Set(places)) as string[]);
+          }
+        }
+      } catch (err) {
+        console.error("Geocoding failed", err);
+      }
+    }, 400); // Debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [location]);
 
   const toggleIndustry = (ind: string) => {
     if (ind === "All") {
@@ -82,34 +111,35 @@ export function ScanClientsModal({ onClose, onScanComplete, importCategory, exis
     let finalData = null;
 
     try {
-      // 1. Try SerpApi First
-      setProgress("Scanning with SerpApi (Google Local Search)...");
-      const serpapiRes = await fetch("/api/scan-clients", {
+      // 1. Try Agent 2 (Apollo Scraper) First
+      setProgress("Scanning with Apollo Scraper (Agent 2)...");
+      const agent2Res = await fetch("/api/scan-clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
            location, 
            industries: finalIndustries, 
            category: importCategory,
-           engine: 'serpapi' 
+           engine: 'agent2',
+           existingCompanyNames
         }),
       });
 
-      if (serpapiRes.ok) {
-        const serpapiData = await serpapiRes.json();
-        if (serpapiData.results && serpapiData.results.length > 0) {
-          finalData = serpapiData;
+      if (agent2Res.ok) {
+        const agent2Data = await agent2Res.json();
+        if (agent2Data.results && agent2Data.results.length > 0) {
+          finalData = agent2Data;
         } else {
-          console.warn("SerpApi returned 0 results");
+          console.warn("Agent 2 returned 0 results");
         }
       } else {
-        const errData = await serpapiRes.json();
-        console.warn("SerpApi failed:", errData.error);
+        const errData = await agent2Res.json();
+        console.warn("Agent 2 failed:", errData.error);
       }
 
-      // 2. Fallback to Agent 1 if SerpApi fails or returns 0
+      // 2. Fallback to Agent 1 (Leads Finder) if Agent 2 fails or returns 0
       if (!finalData) {
-        setProgress("SerpApi failed or returned 0 leads. Falling back to Leads Finder (Agent 1)...");
+        setProgress("Apollo Scraper failed or returned 0 leads. Falling back to Leads Finder (Agent 1)...");
         const agent1Res = await fetch("/api/scan-clients", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -117,7 +147,8 @@ export function ScanClientsModal({ onClose, onScanComplete, importCategory, exis
              location, 
              industries: finalIndustries, 
              category: importCategory,
-             engine: 'agent1' 
+             engine: 'agent1',
+             existingCompanyNames
           }),
         });
 
@@ -134,27 +165,7 @@ export function ScanClientsModal({ onClose, onScanComplete, importCategory, exis
         }
       }
 
-      // 3. Fallback to Agent 2 if Agent 1 fails or returns 0
-      if (!finalData) {
-        setProgress("Agent 1 failed. Falling back to Apollo Scraper (Agent 2)...");
-        const agent2Res = await fetch("/api/scan-clients", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-             location, 
-             industries: finalIndustries, 
-             category: importCategory,
-             engine: 'agent2' 
-          }),
-        });
-
-        if (!agent2Res.ok) {
-          const errData = await agent2Res.json();
-          throw new Error(errData.error || "All scrapers failed to find clients.");
-        }
-        
-        finalData = await agent2Res.json();
-      }
+      // No third fallback - User requested strictly Apify agents only
 
       if (!finalData || !finalData.results || finalData.results.length === 0) {
         alert("No clients found for this location and industry.");
@@ -162,16 +173,9 @@ export function ScanClientsModal({ onClose, onScanComplete, importCategory, exis
         return;
       }
 
-      const uniqueResults = finalData.results.filter((r: any) => !existingCompanyNames.includes(r.company_name.toLowerCase()));
+      const uniqueResults = finalData.results;
       
-      if (uniqueResults.length === 0) {
-        alert("Found clients, but all of them are already in your database. (Skipped to avoid redundancy)");
-        setIsScanning(false);
-        return;
-      }
-
-      const duplicateCount = finalData.results.length - uniqueResults.length;
-      setProgress(`Found ${uniqueResults.length} new clients (Skipped ${duplicateCount} duplicates)! Generating Excel...`);
+      setProgress(`Found ${uniqueResults.length} new clients! Generating Excel...`);
       
       const data = { results: uniqueResults };
 
@@ -262,18 +266,40 @@ export function ScanClientsModal({ onClose, onScanComplete, importCategory, exis
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5" ref={locationRef}>
             <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
               Location / Region
             </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              disabled={isScanning}
-              placeholder="e.g. Manila, Philippines"
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-semibold text-[#133020] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all disabled:opacity-50"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setShowLocationSuggestions(true);
+                }}
+                onFocus={() => setShowLocationSuggestions(true)}
+                disabled={isScanning}
+                placeholder="e.g. Manila, Philippines"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-semibold text-[#133020] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all disabled:opacity-50"
+              />
+              {showLocationSuggestions && location.trim().length > 0 && predictiveLocations.length > 0 && (
+                <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto p-2">
+                  {predictiveLocations.map(loc => (
+                    <div 
+                      key={loc} 
+                      onClick={() => {
+                        setLocation(loc);
+                        setShowLocationSuggestions(false);
+                      }}
+                      className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg cursor-pointer text-sm font-bold text-[#133020] dark:text-gray-200"
+                    >
+                      {loc}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5" ref={dropdownRef}>
