@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { ALLOWED_LOCATIONS } from '../../../lib/locations';
 
 export async function POST(request: Request) {
   try {
-    const { location, industries, category, engine } = await request.json();
+    const { location, industries, category, engine, existingCompanyNames = [] } = await request.json();
 
     if (!location) {
       return NextResponse.json({ error: "Location is required" }, { status: 400 });
@@ -31,39 +32,42 @@ export async function POST(request: Request) {
       // IoSHqwTR9YGhzccez - Leads Finder [Apollo Alternative]
       actorId = "IoSHqwTR9YGhzccez";
       payload = {
-        "fetch_count": 100,
-        "contact_location": [location]
+        "fetch_count": 1000
       };
-      if (searchIndustryArray.length > 0) {
-         payload.company_industry = searchIndustryArray;
-         payload.company_keywords = searchIndustryArray;
+      
+      const locLower = location.toLowerCase();
+      const isLocationAllowed = ALLOWED_LOCATIONS.some(l => l.toLowerCase() === locLower);
+      
+      if (isLocationAllowed) {
+        payload.contact_location = [location];
+      }
+      
+      // If the location is a custom typed string not in the enum, add it to keywords so it still searches!
+      let keywordsToUse = [...searchIndustryArray];
+      if (!isLocationAllowed) {
+        keywordsToUse.push(location);
+      }
+      
+      if (keywordsToUse.length > 0) {
+         // Agent 1 also enforces strict enums for company_industry (e.g. "internet", "retail"). 
+         // By only setting company_keywords, we bypass the enum check and allow custom industries!
+         payload.company_keywords = keywordsToUse;
       }
     } else if (engine === 'agent2') {
       // T1XDXWc1L92AfIJtd - Leads Scraper Apollo | LinkedIn
       actorId = "T1XDXWc1L92AfIJtd";
       
-      let mappedCountry = "";
-      const locLower = location.toLowerCase();
-      if (locLower.includes("usa") || locLower.includes("united states") || locLower.includes("us")) mappedCountry = "United States";
-      else if (locLower.includes("uk") || locLower.includes("united kingdom")) mappedCountry = "United Kingdom";
-      else if (locLower.includes("philippines")) mappedCountry = "Philippines";
-      else if (locLower.includes("canada")) mappedCountry = "Canada";
-      else if (locLower.includes("australia")) mappedCountry = "Australia";
-      
       payload = {
-        "totalResults": 100,
-        "includeEmails": true
+        "totalResults": 1000,
+        "includeEmails": true,
+        "personLocations": [location],
+        "companyLocations": [location]
       };
       
-      if (mappedCountry) {
-         payload.personCountry = [mappedCountry];
-         payload.companyCountry = [mappedCountry];
-      }
-      
-      if (searchIndustryArray.length > 0) {
-         payload.industry = searchIndustryArray;
-         payload.industryKeywords = searchIndustryArray;
-      }
+      // Agent 2 requires specific enums for the 'industry' field and will crash if given custom keywords like "FinTech".
+      // By ONLY passing to 'industryKeywords', we bypass the strict enum validation and allow ANY custom industry!
+      const keywordsToUse = searchIndustryArray.length > 0 ? searchIndustryArray : ["Information Technology and Services", "Financial Services", "Management Consulting", "Marketing and Advertising", "Real Estate"];
+      payload.industryKeywords = keywordsToUse;
     } else if (engine === 'serpapi') {
       const serpApiKey = process.env.SERPAPI_KEY;
       if (!serpApiKey) {
@@ -135,7 +139,7 @@ export async function POST(request: Request) {
                let email = r.email || r.contact_email || r.work_email || r.personEmail || "";
                if (!email && r.emails && Array.isArray(r.emails) && r.emails.length > 0) email = r.emails[0].email || r.emails[0] || "";
                
-               let phone = r.phone || r.contact_phone || r.companyPhone || r.personPhone || r.mobilePhone || r.telephone || r.organizationPhone || r.mobileNumber || r.directDial || r.officePhone || r.organization?.primary_phone?.number || r.company?.phone || "";
+               let phone = r.phone || r.contact_phone || r.companyPhone || r.personPhone || r.mobilePhone || r.telephone || r.organizationPhone || r.mobileNumber || r.directDial || r.officePhone || r.organization?.primary_phone?.number || r.company?.phone || (typeof r.phone_numbers === 'string' ? r.phone_numbers : "") || (typeof r.phoneNumbers === 'string' ? r.phoneNumbers : "") || "";
                if (!phone && r.phoneNumbers && Array.isArray(r.phoneNumbers) && r.phoneNumbers.length > 0) phone = r.phoneNumbers[0] || "";
                if (!phone && r.phone_numbers && Array.isArray(r.phone_numbers) && r.phone_numbers.length > 0) phone = r.phone_numbers[0].number || r.phone_numbers[0] || "";
 
@@ -173,14 +177,34 @@ export async function POST(request: Request) {
                  country: location
                };
              });
-
-             // Filter out records that don't have at least one mode of contact (Email or Phone) or no company name
-             finalResults = mappedResults.filter((r: any) => {
-               if (r.company_name === "") return false;
-               const hasEmail = r.contact_email && r.contact_email.trim() !== "";
-               const hasPhone = r.contact_telephone && r.contact_telephone.trim() !== "";
-               return hasEmail || hasPhone;
+             // Filter out records that don't have a company name or are already in the database
+             const uniqueResults = mappedResults.filter((r: any) => {
+               if (!r.company_name || r.company_name.trim() === "") return false;
+               if (existingCompanyNames.includes(r.company_name.toLowerCase())) return false;
+               return true;
              });
+
+             // Bucket A: Leads with BOTH email and phone
+             const strictLeads = uniqueResults.filter((r: any) => {
+               const hasEmail = r.contact_email && r.contact_email.trim() !== "";
+               const hasPhone = (r.contact_telephone && r.contact_telephone.trim() !== "") || (r.contact_mobile && r.contact_mobile.trim() !== "");
+               return hasEmail && hasPhone;
+             });
+
+             // Bucket B: Leads with ONLY email (no phone)
+             const emailOnlyLeads = uniqueResults.filter((r: any) => {
+               const hasEmail = r.contact_email && r.contact_email.trim() !== "";
+               const hasPhone = (r.contact_telephone && r.contact_telephone.trim() !== "") || (r.contact_mobile && r.contact_mobile.trim() !== "");
+               return hasEmail && !hasPhone;
+             });
+
+             // Fill up to 100 results, prioritizing strict leads
+             if (strictLeads.length >= 100) {
+               finalResults = strictLeads.slice(0, 100);
+             } else {
+               const needed = 100 - strictLeads.length;
+               finalResults = [...strictLeads, ...emailOnlyLeads.slice(0, needed)];
+             }
           }
        }
     }
