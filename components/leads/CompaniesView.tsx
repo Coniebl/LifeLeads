@@ -41,22 +41,23 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     }
   }, [selectedCompany?.name]);
 
-  const allIndustries = ["All Industries", ...Array.from(new Set(companies.flatMap(c => c.industries)))];
-  const allCountries = ["All Countries", ...Array.from(new Set(companies.map(c => c.country)))];
-  const allSources = ["All Records", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean)))] as string[];
-
-  // Filter companies that belong to Leads (`!status || status === "Not Active"`) and match the active subcategory
-  const filteredCompanies = companies.filter(c => {
+  // Base list of leads matching the active category before text/dropdown filters
+  const baseCompaniesForCategory = companies.filter(c => {
     // Check if item has already been processed out of Leads
     if (c.status === "Pending" || c.status === "Accepted" || c.status === "Rejected") {
       return false;
     }
-
     // Classify category: use explicit category or infer from name
     const itemCategory = c.category || "Companies";
+    return itemCategory === activeSubcategory;
+  });
 
-    if (itemCategory !== activeSubcategory) return false;
+  const allIndustries = ["All Industries", ...Array.from(new Set(baseCompaniesForCategory.flatMap(c => c.industries)))];
+  const allCountries = ["All Countries", ...Array.from(new Set(baseCompaniesForCategory.map(c => c.country)))];
+  const allSources = ["All Records", ...Array.from(new Set(baseCompaniesForCategory.map(c => c.source).filter(Boolean)))] as string[];
 
+  // Apply search and dropdown filters
+  const filteredCompanies = baseCompaniesForCategory.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           c.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (c.contactPerson && c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()));
