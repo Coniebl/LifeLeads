@@ -65,8 +65,8 @@ export function useDashboardData() {
     totalCountries: 0,
     totalIndustries: 0,
     acceptedOfferCount: 0,
-    monthlyAccepted: Array(12).fill(0),
-    monthlyRejected: Array(12).fill(0),
+    monthlyHotLeads: Array(12).fill(0),
+    monthlyColdLeads: Array(12).fill(0),
   });
 
   const [availableFiles, setAvailableFiles] = useState<string[]>([]);
@@ -154,8 +154,8 @@ export function useDashboardData() {
       const uniqueIndustries = new Set<string>();
       const countryMap: Record<string, { count: number; companies: string[] }> = {};
       const industryCountMap: Record<string, number> = {};
-      const monthlyAccepted = Array(12).fill(0);
-      const monthlyRejected = Array(12).fill(0);
+      const monthlyHotLeads = Array(12).fill(0);
+      const monthlyColdLeads = Array(12).fill(0);
 
       records.forEach((record) => {
 
@@ -179,7 +179,7 @@ export function useDashboardData() {
         const lowerCountry = country.toLowerCase();
         if (lowerCountry === 'uk' || lowerCountry === 'scotland' || lowerCountry === 'scotland(uk)' || lowerCountry === 'england' || lowerCountry === 'wales') {
           country = 'United Kingdom';
-        } else if (lowerCountry === 'us' || lowerCountry === 'u.s.' || lowerCountry === 'u.s.a') {
+        } else if (lowerCountry === 'us' || lowerCountry === 'u.s.' || lowerCountry === 'u.s.a' || lowerCountry === 'new york' || lowerCountry === 'los angeles' || lowerCountry === 'usa' || lowerCountry.includes('united states')) {
           country = 'USA';
         }
 
@@ -209,8 +209,7 @@ export function useDashboardData() {
           const date = new Date(record.created_at);
           const month = date.getMonth(); 
           if (!isNaN(month)) {
-            if (status === "Accepted") monthlyAccepted[month]++;
-            if (status === "Rejected") monthlyRejected[month]++;
+            // Hot Leads and Cold Leads logic will be added later. Kept at 0 for now.
           }
         }
       });
@@ -228,8 +227,8 @@ export function useDashboardData() {
           totalCountries: uniqueCountries.size,
           totalIndustries: uniqueIndustries.size,
           acceptedOfferCount: acceptedCount,
-          monthlyAccepted,
-          monthlyRejected,
+          monthlyHotLeads,
+          monthlyColdLeads,
         });
 
         const colors = [

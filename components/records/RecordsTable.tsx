@@ -26,7 +26,7 @@ interface RecordsTableProps {
 
 export function RecordsTable({ records }: RecordsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50;
+  const pageSize = 10;
 
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<{ direction: 'asc' | 'desc' } | null>(null);
@@ -233,21 +233,21 @@ export function RecordsTable({ records }: RecordsTableProps) {
             ) : (
               paginatedRecords.map((record, index) => (
                 <tr key={record.id} className="hover:bg-[#046241]/5 dark:hover:bg-white/[0.02] transition-colors group">
-                  <td className="py-4 px-6 text-sm font-bold text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                  <td className="py-4 px-6 text-sm font-bold text-gray-400 dark:text-gray-500 whitespace-nowrap align-top">
                     {startIndex + index + 1}
                   </td>
-                  <td className="py-4 px-6 text-sm font-black text-[#133020] dark:text-white whitespace-nowrap group-hover:text-[#046241] dark:group-hover:text-[#ffb347] transition-colors">
+                  <td className="py-4 px-6 text-sm font-black text-[#133020] dark:text-white whitespace-normal break-words min-w-[200px] max-w-md group-hover:text-[#046241] dark:group-hover:text-[#ffb347] transition-colors align-top">
                     {record.companyName}
                   </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
+                  <td className="py-4 px-6 whitespace-nowrap align-top">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-[#133020]/5 text-[#133020] dark:bg-white/10 dark:text-gray-300">
                       {record.category || "Companies"}
                     </span>
                   </td>
-                  <td className="py-4 px-6 text-xs font-bold text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                  <td className="py-4 px-6 text-xs font-bold text-gray-600 dark:text-gray-300 whitespace-nowrap align-top">
                     {record.country}
                   </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
+                  <td className="py-4 px-6 whitespace-nowrap align-top">
                     <div className="flex gap-1 flex-wrap">
                       {(record.industry && record.industry !== "General") 
                         ? record.industry.split(',').map((ind, idx) => {
@@ -267,19 +267,19 @@ export function RecordsTable({ records }: RecordsTableProps) {
                       }
                     </div>
                   </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
+                  <td className="py-4 px-6 whitespace-nowrap align-top">
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{record.contactPerson || "Not Provided"}</span>
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200 whitespace-normal break-words max-w-[150px]">{record.contactPerson || "Not Provided"}</span>
                       <span className="text-[10px] text-gray-400 truncate max-w-[150px]">{record.email || "No Email"}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-6 text-xs font-mono font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                  <td className="py-4 px-6 text-xs font-mono font-semibold text-gray-600 dark:text-gray-400 whitespace-normal break-words min-w-[120px] max-w-[200px] align-top">
                     {record.phone}
                   </td>
-                  <td className="py-4 px-6 text-xs font-mono font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                  <td className="py-4 px-6 text-xs font-mono font-semibold text-gray-600 dark:text-gray-400 whitespace-normal break-words min-w-[120px] max-w-[200px] align-top">
                     {record.telephone}
                   </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
+                  <td className="py-4 px-6 whitespace-nowrap align-top">
                     <div className="flex items-center gap-2">
                       {record.linkedin && (
                         <a href={record.linkedin} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-[#0077b5]/10 text-[#0077b5] hover:bg-[#0077b5]/20 font-bold transition-colors" title="LinkedIn">
@@ -294,7 +294,7 @@ export function RecordsTable({ records }: RecordsTableProps) {
                       {!record.linkedin && !record.website && <span className="text-gray-300 text-xs">-</span>}
                     </div>
                   </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
+                  <td className="py-4 px-6 whitespace-nowrap align-top">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-extrabold border ${
                         record.status === "Accepted"
@@ -316,7 +316,7 @@ export function RecordsTable({ records }: RecordsTableProps) {
                       {record.status || "Pending"}
                     </span>
                   </td>
-                  <td className="py-4 px-6 text-xs font-bold text-gray-400 whitespace-nowrap">
+                  <td className="py-4 px-6 text-xs font-bold text-gray-400 whitespace-nowrap align-top">
                     {record.dateAdded}
                   </td>
                 </tr>
@@ -326,10 +326,10 @@ export function RecordsTable({ records }: RecordsTableProps) {
         </table>
       </div>
 
-      {/* Pagination Bar (50 records per page) */}
+      {/* Pagination Bar (10 records per page) */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/5">
         <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
-          Showing <span className="text-[#133020] dark:text-white font-black">{filteredRecords.length === 0 ? 0 : startIndex + 1}</span> to <span className="text-[#133020] dark:text-white font-black">{Math.min(startIndex + pageSize, filteredRecords.length)}</span> of <span className="text-[#046241] dark:text-[#ffb347] font-black">{filteredRecords.length}</span> total records (50 per page)
+          Showing <span className="text-[#133020] dark:text-white font-black">{filteredRecords.length === 0 ? 0 : startIndex + 1}</span> to <span className="text-[#133020] dark:text-white font-black">{Math.min(startIndex + pageSize, filteredRecords.length)}</span> of <span className="text-[#046241] dark:text-[#ffb347] font-black">{filteredRecords.length}</span> total records (10 per page)
         </span>
 
         <div className="flex items-center gap-2">

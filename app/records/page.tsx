@@ -17,6 +17,7 @@ export default function RecordsPage() {
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState("All Files");
+  const [contactDeetsFilter, setContactDeetsFilter] = useState("All Contact Deets");
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -178,6 +179,23 @@ export default function RecordsPage() {
       if (!matchCat) return false;
     }
 
+    // Contact Deets filter
+    if (contactDeetsFilter !== "All Contact Deets") {
+      const hasEmail = r.email !== "" && r.email.toLowerCase() !== "n/a";
+      const hasPhone = r.phone !== "" && r.phone.toLowerCase() !== "n/a";
+      const hasTelephone = r.telephone !== "" && r.telephone.toLowerCase() !== "n/a";
+
+      if (contactDeetsFilter === "Complete contact info") {
+        if (!hasEmail || !hasPhone || !hasTelephone) return false;
+      } else if (contactDeetsFilter === "Email only") {
+        if (!hasEmail || hasPhone || hasTelephone) return false;
+      } else if (contactDeetsFilter === "Telephone only") {
+        if (!hasTelephone || hasEmail || hasPhone) return false;
+      } else if (contactDeetsFilter === "Phone only") {
+        if (!hasPhone || hasEmail || hasTelephone) return false;
+      }
+    }
+
     // Time range filter
     if (timeRangeDays < 365) {
       const recDate = new Date(r.dateAdded).getTime();
@@ -196,8 +214,22 @@ export default function RecordsPage() {
     return matchesSearch && matchesFile;
   });
 
+  const getCompletenessScore = (r: RecordData) => {
+    let score = 0;
+    if (r.email && r.email !== "" && r.email.toLowerCase() !== "n/a") score += 1;
+    if (r.phone && r.phone !== "" && r.phone.toLowerCase() !== "n/a") score += 1;
+    if (r.telephone && r.telephone !== "" && r.telephone.toLowerCase() !== "n/a") score += 1;
+    return score;
+  };
+
   const statusOrder: Record<string, number> = { "Not Active": 1, "Pending": 2, "Accepted": 3, "Rejected": 4 };
   const sortedRecords = [...filteredRecords].sort((a, b) => {
+    const scoreA = getCompletenessScore(a);
+    const scoreB = getCompletenessScore(b);
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA; // Complete details first
+    }
+
     const orderA = a.status ? statusOrder[a.status] : 4;
     const orderB = b.status ? statusOrder[b.status] : 4;
     return orderA - orderB;
@@ -374,7 +406,7 @@ export default function RecordsPage() {
           </div>
 
           {/* Search Input and File dropdown */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 flex-1 lg:max-w-xl">
+          <div className="flex flex-col sm:flex-row items-center gap-3 flex-1 lg:max-w-4xl">
             <div className="relative w-full flex-1">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -390,7 +422,15 @@ export default function RecordsPage() {
               />
             </div>
 
-            <div className="relative w-full sm:w-48">
+            <div className="relative w-full sm:w-48 shrink-0">
+              <CustomSelect
+                options={["All Contact Deets", "Complete contact info", "Email only", "Telephone only", "Phone only"]}
+                value={contactDeetsFilter}
+                onChange={setContactDeetsFilter}
+              />
+            </div>
+
+            <div className="relative w-full sm:w-48 shrink-0">
               <CustomSelect
                 options={["All Files", ...availableFiles]}
                 value={selectedFile}
@@ -434,7 +474,7 @@ export default function RecordsPage() {
           </div>
         </div>
 
-        {/* Data Table with 50 items per page pagination */}
+        {/* Data Table with 10 items per page pagination */}
         <RecordsTable records={sortedRecords} />
 
       {isModalOpen && (

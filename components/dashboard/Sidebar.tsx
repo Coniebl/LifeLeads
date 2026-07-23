@@ -142,7 +142,7 @@ export function Sidebar({
             else if (item.name === "Status") isActive = pathname === "/status";
             else if (item.name === "Records") isActive = pathname === "/records";
 
-            const hasSubcategories = item.name === "Leads" || item.name === "Status";
+            const hasSubcategories = item.name === "Leads";
 
             return (
               <div key={item.name} className="flex flex-col">
@@ -153,7 +153,7 @@ export function Sidebar({
                     
                     if (item.name === "Leads") router.push(`/leads?category=${category}`);
                     else if (item.name === "Dashboard") router.push("/dashboard");
-                    else if (item.name === "Status") router.push(`/status?category=${category}`);
+                    else if (item.name === "Status") router.push(`/status`);
                     else if (item.name === "Records") router.push("/records");
                   }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 ease-in-out cursor-pointer ${
