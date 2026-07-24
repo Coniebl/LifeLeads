@@ -13,9 +13,10 @@ export function StatusView({
   setCompanies?: React.Dispatch<React.SetStateAction<CompanyData[]>>;
 }) {
   const searchParams = useSearchParams();
-  const selectedSubCategory = searchParams.get("category") || "Companies";
-  const [statusTab, setStatusTab] = useState<"Pending" | "Responded" | "Accepted" | "Rejected" | "Not Active">("Pending");
-  const [selectedSource, setSelectedSource] = useState("All Records");
+  const [statusTab, setStatusTab] = useState<"Pending" | "Responded" | "Not Active">("Pending");
+  const [selectedClassification, setSelectedClassification] = useState("All Classifications");
+  const [classificationFilterOpen, setClassificationFilterOpen] = useState(false);
+  const [selectedSource, setSelectedSource] = useState("All Files");
   const [selectedIndustry, setSelectedIndustry] = useState("All Industries");
   const [selectedCountry, setSelectedCountry] = useState("All Countries");
   const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null);
@@ -50,39 +51,29 @@ export function StatusView({
     return () => clearInterval(interval);
   }, []);
 
-  // 1. Filter by Subcategory
-  const subCategoryCompanies = companies.filter((c) => {
-    if (selectedSubCategory === "Companies") {
-      return !c.category || c.category === "Companies";
-    }
-    return c.category === "Filipino Community Organizations";
-  });
+  // 1. Derive dropdown filter options
+  const allClassifications = ["All Classifications", "Companies", "Filipino Community Organizations"];
+  const allSources = ["All Files", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean)))];
+  const allIndustries = ["All Industries", ...Array.from(new Set(companies.flatMap(c => c.industries)))];
+  const allCountries = ["All Countries", ...Array.from(new Set(companies.map(c => c.country)))];
 
-  // 2. Derive dropdown filter options from subcategory companies
-  const allSources = ["All Records", ...Array.from(new Set(subCategoryCompanies.map(c => c.source).filter(Boolean)))];
-  const allIndustries = ["All Industries", ...Array.from(new Set(subCategoryCompanies.flatMap(c => c.industries)))];
-  const allCountries = ["All Countries", ...Array.from(new Set(subCategoryCompanies.map(c => c.country)))];
-
-  // 3. Apply dropdown filters
-  const filteredCompanies = subCategoryCompanies.filter(c => {
-    const matchSource = selectedSource === "All Records" || c.source === selectedSource;
+  // 2. Apply dropdown filters
+  const filteredCompanies = companies.filter(c => {
+    const matchClassification = selectedClassification === "All Classifications" || (c.category || "Companies") === selectedClassification;
+    const matchSource = selectedSource === "All Files" || c.source === selectedSource;
     const matchIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
     const matchCountry = selectedCountry === "All Countries" || c.country === selectedCountry;
-    return matchSource && matchIndustry && matchCountry;
+    return matchClassification && matchSource && matchIndustry && matchCountry;
   });
 
-  // 4. Derived Stats
+  // 3. Derived Stats
   const totalCount = filteredCompanies.length;
-  const acceptedCount = filteredCompanies.filter(c => c.status === "Accepted").length;
-  const rejectedCount = filteredCompanies.filter(c => c.status === "Rejected").length;
   const pendingCount = filteredCompanies.filter(c => c.status === "Pending").length;
   const respondedCount = filteredCompanies.filter(c => c.status === "Responded").length;
   const inactiveCount = filteredCompanies.filter(c => !c.status || c.status === "Not Active").length;
 
-  // 5. Filter by active Status Pill (Pending, Responded, Accepted, Rejected, Not Active)
+  // 4. Filter by active Status Pill (Pending, Responded, Not Active)
   const tabulatedCompanies = filteredCompanies.filter(c => {
-    if (statusTab === "Accepted") return c.status === "Accepted";
-    if (statusTab === "Rejected") return c.status === "Rejected";
     if (statusTab === "Responded") return c.status === "Responded";
     if (statusTab === "Not Active") return !c.status || c.status === "Not Active";
     return c.status === "Pending";
@@ -188,7 +179,7 @@ export function StatusView({
     addSheet(acceptedData, "Accepted", "FF10B981"); // Bright Green
     addSheet(rejectedData, "Rejected", "FFEF4444"); // Red
 
-    const safeTitle = selectedSubCategory.replace(/[\/\?\*\[\]:]/g, "_").substring(0, 31);
+    const safeTitle = selectedClassification.replace(/[\/\?\*\[\]:]/g, "_").substring(0, 31);
     const buffer = await wb.xlsx.writeBuffer();
     saveAs(new Blob([buffer]), `LifeLeads_Status_All_${safeTitle}.xlsx`);
     
@@ -197,7 +188,7 @@ export function StatusView({
       const storedExports = JSON.parse(localStorage.getItem('lifelead_exports') || '[]');
       storedExports.push({
         date: new Date().toISOString(),
-        category: selectedSubCategory,
+        category: selectedClassification,
         count: filteredCompanies.length
       });
       localStorage.setItem('lifelead_exports', JSON.stringify(storedExports));
@@ -259,7 +250,7 @@ export function StatusView({
         <div>
           <h1 className="text-[32px] md:text-4xl font-black tracking-tight mb-1">
             <span className="text-transparent bg-clip-text bg-linear-to-r from-[#133020] via-[#046241] to-[#b45309] dark:from-[#4ade80] dark:via-[#2dd4bf] dark:to-[#ffb347]">
-              Status - {selectedSubCategory}
+              Status
             </span>
           </h1>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -268,8 +259,6 @@ export function StatusView({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Subcategory toggles removed in favor of sidebar navigation */}
-
           {/* Export Data Button right beside top header */}
           <button
             onClick={handleExport}
@@ -284,14 +273,12 @@ export function StatusView({
       </div>
 
       {/* Status Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "TOTAL", count: totalCount, color: "text-[#046241] dark:text-[#4ade80]", glow: "dark:border-[#4ade80] dark:shadow-[0_0_15px_rgba(74,222,128,0.25)]" },
-          { label: "ACCEPTED", count: acceptedCount, color: "text-[#046241] dark:text-[#2dd4bf]", glow: "dark:border-[#2dd4bf] dark:shadow-[0_0_15px_rgba(45,212,191,0.25)]" },
-          { label: "REJECTED", count: rejectedCount, color: "text-red-500 dark:text-red-400", glow: "dark:border-red-400 dark:shadow-[0_0_15px_rgba(248,113,113,0.25)]" },
-          { label: "RESPONDED", count: respondedCount, color: "text-[#0d9488] dark:text-[#2dd4bf]", glow: "dark:border-[#2dd4bf] dark:shadow-[0_0_15px_rgba(45,212,191,0.25)]" },
-          { label: "PENDING", count: pendingCount, color: "text-[#ffb347] dark:text-[#ffb347]", glow: "dark:border-[#ffb347] dark:shadow-[0_0_15px_rgba(255,179,71,0.25)]" },
           { label: "NOT ACTIVE", count: inactiveCount, color: "text-gray-500 dark:text-gray-400", glow: "dark:border-gray-400 dark:shadow-[0_0_15px_rgba(156,163,175,0.25)]" },
+          { label: "PENDING", count: pendingCount, color: "text-[#ffb347] dark:text-[#ffb347]", glow: "dark:border-[#ffb347] dark:shadow-[0_0_15px_rgba(255,179,71,0.25)]" },
+          { label: "RESPONDED", count: respondedCount, color: "text-[#0d9488] dark:text-[#2dd4bf]", glow: "dark:border-[#2dd4bf] dark:shadow-[0_0_15px_rgba(45,212,191,0.25)]" },
         ].map((stat, idx) => (
           <div key={idx} className={`bg-white dark:bg-[#14120e] border border-gray-100 rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm transition-all ${stat.glow}`}>
             <span className={`text-3xl font-black ${stat.color}`}>{stat.count}</span>
@@ -302,13 +289,11 @@ export function StatusView({
 
 
 
-      {/* Classification Pills above tabulated display (Pending, Responded, Accepted, Rejected, Not Active) */}
-      <div className="flex items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          {(["Not Active", "Pending", "Responded", "Accepted", "Rejected"] as const).map((tab) => {
+      {/* Status Pills above tabulated display (Pending, Responded, Not Active) */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 pb-3">
+        <div className="flex items-center flex-wrap gap-2">
+          {(["Not Active", "Pending", "Responded"] as const).map((tab) => {
             const count = filteredCompanies.filter(c => {
-              if (tab === "Accepted") return c.status === "Accepted";
-              if (tab === "Rejected") return c.status === "Rejected";
               if (tab === "Responded") return c.status === "Responded";
               if (tab === "Not Active") return !c.status || c.status === "Not Active";
               return c.status === "Pending";
@@ -320,11 +305,7 @@ export function StatusView({
                 onClick={() => setStatusTab(tab)}
                 className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black transition-all duration-300 ease-in-out cursor-pointer ${
                   statusTab === tab
-                    ? tab === "Accepted"
-                      ? "bg-[#046241] text-white shadow-md shadow-[#046241]/20 scale-105"
-                      : tab === "Rejected"
-                      ? "bg-red-600 text-white shadow-md shadow-red-600/20 scale-105"
-                      : tab === "Responded"
+                    ? tab === "Responded"
                       ? "bg-[#0d9488] text-white shadow-md shadow-[#0d9488]/20 scale-105"
                       : tab === "Not Active"
                       ? "bg-gray-400 text-white shadow-md shadow-gray-400/20 scale-105"
@@ -332,7 +313,7 @@ export function StatusView({
                     : "bg-white dark:bg-[#14120e] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200 dark:border-white/5"
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${tab === "Accepted" ? "bg-emerald-300" : tab === "Rejected" ? "bg-red-300" : tab === "Responded" ? "bg-teal-300" : tab === "Not Active" ? "bg-gray-200" : "bg-[#133020]"}`}></span>
+                <span className={`w-2 h-2 rounded-full ${tab === "Responded" ? "bg-teal-300" : tab === "Not Active" ? "bg-gray-200" : "bg-[#133020]"}`}></span>
                 {tab}
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusTab === tab ? "bg-black/20 text-white" : "bg-gray-100 dark:bg-white/10 text-gray-500"}`}>
                   {count}
@@ -341,7 +322,7 @@ export function StatusView({
             );
           })}
         </div>
-        <div className="hidden md:block">
+        <div className="flex items-center gap-2 flex-wrap">
           <SelectDropdown
             value={selectedSource}
             onChange={setSelectedSource}
@@ -357,10 +338,53 @@ export function StatusView({
       {/* Tabulated Display */}
       <div className="flex-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden flex flex-col min-h-[360px]">
         {/* Table Header */}
-        <div className="grid grid-cols-[40px_auto_2fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-6 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+        <div className="grid grid-cols-[40px_auto_2.5fr_1fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-6 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest overflow-visible">
           <div>No.</div>
           <div className="w-10"></div>
           <div>Name / Organization</div>
+          <div className="flex items-center gap-1 relative">
+            Classification
+            <button 
+              onClick={(e) => { e.stopPropagation(); setClassificationFilterOpen(!classificationFilterOpen); }}
+              className={`p-1 rounded-md transition-colors cursor-pointer ${selectedClassification !== "All Classifications" ? 'bg-[#046241] text-white dark:bg-[#ffb347] dark:text-[#133020]' : 'text-gray-400 hover:bg-black/5 dark:hover:bg-white/10'}`}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            </button>
+            {classificationFilterOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setClassificationFilterOpen(false); }} />
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl z-50 p-2 text-sm font-medium text-gray-700 dark:text-gray-200 normal-case font-sans">
+                   <div className="flex justify-between items-center px-2 pb-2 mb-2 border-b border-gray-100 dark:border-white/5">
+                      <span className="text-[10px] uppercase font-bold text-gray-400">Classification</span>
+                      {selectedClassification !== "All Classifications" && (
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); setSelectedClassification("All Classifications"); setClassificationFilterOpen(false); }}
+                           className="text-[10px] text-red-500 hover:underline font-bold cursor-pointer"
+                         >
+                           Clear
+                         </button>
+                      )}
+                   </div>
+                   {allClassifications.slice(1).map(opt => (
+                     <label key={opt} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg cursor-pointer">
+                       <input 
+                         type="checkbox" 
+                         checked={selectedClassification === opt} 
+                         onChange={(e) => {
+                           e.stopPropagation();
+                           setSelectedClassification(selectedClassification === opt ? "All Classifications" : opt);
+                         }}
+                         className="rounded border-gray-300 text-[#046241] focus:ring-[#046241]"
+                       />
+                       <span className="truncate text-xs font-bold text-[#133020] dark:text-gray-200">{opt}</span>
+                     </label>
+                   ))}
+                </div>
+              </>
+            )}
+          </div>
           <div>Contact Person</div>
           <div>Industry</div>
           <div>Status</div>
@@ -374,7 +398,7 @@ export function StatusView({
               <div
                 key={i}
                 onClick={() => setSelectedCompany(company)}
-                className="grid grid-cols-[40px_auto_2fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-4 py-3.5 rounded-xl hover:bg-[#046241]/5 dark:hover:bg-white/5 transition-all group cursor-pointer border border-transparent hover:border-[#046241]/20 dark:hover:border-white/10"
+                className="grid grid-cols-[40px_auto_2.5fr_1fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-4 py-3.5 rounded-xl hover:bg-[#046241]/5 dark:hover:bg-white/5 transition-all group cursor-pointer border border-transparent hover:border-[#046241]/20 dark:hover:border-white/10"
               >
                 {/* Number */}
                 <div className="text-sm font-bold text-gray-400 dark:text-gray-500 pl-2">
@@ -388,20 +412,25 @@ export function StatusView({
 
                 {/* Name */}
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-black text-[#133020] dark:text-white truncate group-hover:text-[#046241] dark:group-hover:text-[#ffb347] transition-colors">
+                  <span className="text-sm font-black text-[#133020] dark:text-white whitespace-normal break-words max-w-xs group-hover:text-[#046241] dark:group-hover:text-[#ffb347] transition-colors">
                     {company.name}
                   </span>
-                  <span className="text-[11px] font-medium text-gray-400 truncate">
+                  <span className="text-[11px] font-medium text-gray-400 whitespace-normal break-words max-w-xs mt-1">
                     {company.country} · {company.source || "Manual Entry"}
                   </span>
+                </div>
+                
+                {/* Classification */}
+                <div className="text-[11px] font-bold text-gray-600 dark:text-gray-300 whitespace-normal break-words max-w-[120px]">
+                  {company.category || "Companies"}
                 </div>
 
                 {/* Contact Person & Designation */}
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 whitespace-normal break-words max-w-[150px]">
                     {company.contactPerson || "Not Provided"}
                   </span>
-                  <span className="text-[11px] font-medium text-[#046241] dark:text-[#ffb347] truncate">
+                  <span className="text-[11px] font-medium text-[#046241] dark:text-[#ffb347] whitespace-normal break-words max-w-[150px] mt-1">
                     {company.designation || "Representative"}
                   </span>
                 </div>
@@ -605,37 +634,8 @@ export function StatusView({
                   ) : null}
                 </div>
 
-                {/* Right Side: Accept / Reject Icons */}
+                {/* Right Side removed as per new flow */}
                 <div className="flex items-center gap-3">
-                  <button
-                    disabled={isUpdating || selectedCompany.status === "Rejected" || selectedCompany.status === "Pending"}
-                    onClick={() => handleUpdateStatus("Rejected")}
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center text-white transition-all shadow-md shrink-0 ${
-                      selectedCompany.status === "Pending" 
-                        ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed shadow-none text-gray-500 dark:text-gray-500" 
-                        : "bg-red-600 hover:bg-red-700 active:scale-95 shadow-red-600/20 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-                    }`}
-                    title={selectedCompany.status === "Pending" ? "Waiting for response" : selectedCompany.status === "Rejected" ? "Already Rejected" : "Rejected Offer"}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-
-                  <button
-                    disabled={isUpdating || selectedCompany.status === "Accepted" || selectedCompany.status === "Pending"}
-                    onClick={() => handleUpdateStatus("Accepted")}
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center text-white transition-all shadow-md shrink-0 ${
-                      selectedCompany.status === "Pending" 
-                        ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed shadow-none text-gray-500 dark:text-gray-500" 
-                        : "bg-[#046241] hover:bg-[#034d33] active:scale-95 shadow-[#046241]/20 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-                    }`}
-                    title={selectedCompany.status === "Pending" ? "Waiting for response" : selectedCompany.status === "Accepted" ? "Already Accepted" : "Accepted Offer"}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </button>
                 </div>
               </div>
             ) : (
