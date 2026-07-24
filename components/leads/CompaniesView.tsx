@@ -13,6 +13,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   const [selectedIndustry, setSelectedIndustry] = useState("All Industries");
   const [selectedCountry, setSelectedCountry] = useState("All Countries");
   const [selectedSource, setSelectedSource] = useState("All Records");
+  const [contactDeetsFilter, setContactDeetsFilter] = useState("All Contact Deets");
   
   // Subcategories: Companies vs Filipino Community Organizations
   const activeSubcategory = searchParams.get("category") || "Companies";
@@ -64,7 +65,25 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     const matchesIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
     const matchesCountry = selectedCountry === "All Countries" || c.country === selectedCountry;
     const matchesSource = selectedSource === "All Records" || (c.source || "Unknown") === selectedSource;
-    return matchesSearch && matchesIndustry && matchesCountry && matchesSource;
+
+    let matchesContact = true;
+    if (contactDeetsFilter !== "All Contact Deets") {
+      const hasEmail = !!c.email && c.email.toLowerCase() !== "n/a";
+      const hasPhone = !!c.contactMobile && c.contactMobile.toLowerCase() !== "n/a";
+      const hasTelephone = !!c.contactTelephone && c.contactTelephone.toLowerCase() !== "n/a";
+
+      if (contactDeetsFilter === "Complete contact info") {
+        matchesContact = hasEmail && hasPhone && hasTelephone;
+      } else if (contactDeetsFilter === "Email only") {
+        matchesContact = hasEmail && !hasPhone && !hasTelephone;
+      } else if (contactDeetsFilter === "Telephone only") {
+        matchesContact = !hasEmail && !hasPhone && hasTelephone;
+      } else if (contactDeetsFilter === "Phone only") {
+        matchesContact = !hasEmail && hasPhone && !hasTelephone;
+      }
+    }
+
+    return matchesSearch && matchesIndustry && matchesCountry && matchesSource && matchesContact;
   });
 
   // 20 cards per page (5 columns x 4 rows)
@@ -74,7 +93,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeSubcategory, searchTerm, selectedIndustry, selectedCountry, selectedSource]);
+  }, [activeSubcategory, searchTerm, selectedIndustry, selectedCountry, selectedSource, contactDeetsFilter]);
 
   // Handle generating email templates
   const handleTemplateClick = (templateType: "Introduction" | "Partnerships" | "Follow Ups") => {
@@ -221,8 +240,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
         
         {/* Search Bar */}
         <div className="relative flex-1 w-full min-w-[200px]">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
           </div>
@@ -231,27 +250,42 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
             placeholder="Search leads by company, country, contact person..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-full pl-12 pr-4 py-3 bg-transparent text-sm font-semibold text-[#133020] dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] rounded-xl transition-all"
+            className="w-full h-full pl-9 pr-3 py-2.5 bg-transparent text-xs font-semibold text-[#133020] dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] rounded-xl transition-all"
           />
         </div>
 
         {/* Filters Group */}
-        <div className="flex flex-wrap items-center justify-end gap-3 xl:pl-4 xl:border-l border-gray-100 dark:border-white/10 pb-1 xl:pb-0">
-          <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hidden xl:block flex-shrink-0">Filters</span>
-          
+        <div className="flex flex-wrap items-center justify-end gap-2 xl:pl-4 xl:border-l border-gray-100 dark:border-white/10 pb-1 xl:pb-0">
+          <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hidden xl:block flex-shrink-0">Filters</span>
+
+          <SelectDropdown
+            value={contactDeetsFilter}
+            onChange={setContactDeetsFilter}
+            options={["All Contact Deets", "Complete contact info", "Email only", "Telephone only", "Phone only"].map(s => ({ label: s, value: s }))}
+            icon={
+              <svg className="w-3.5 h-3.5 text-[#046241] dark:text-[#ffb347] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            }
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+          />
+
           <SelectDropdown
             value={selectedSource}
             onChange={setSelectedSource}
             options={allSources.map(s => ({ label: s, value: s }))}
             icon={
-              <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-[#046241] dark:text-[#ffb347] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
             }
-            className="flex items-center justify-between gap-2 px-4 py-3 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-[#046241] dark:text-[#ffb347]"
-            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
-            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-bold text-[#046241] dark:text-[#ffb347]"
+            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
 
           <SelectDropdown
@@ -259,14 +293,14 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
             onChange={setSelectedIndustry}
             options={allIndustries.map(i => ({ label: i, value: i }))}
             icon={
-              <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
               </svg>
             }
-            className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-semibold text-gray-700 dark:text-gray-200"
-            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
-            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
           
           <SelectDropdown
@@ -274,14 +308,14 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
             onChange={setSelectedCountry}
             options={allCountries.map(c => ({ label: c, value: c }))}
             icon={
-              <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
               </svg>
             }
-            className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-semibold text-gray-700 dark:text-gray-200"
-            dropdownClassName="absolute top-full right-0 mt-2 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
-            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            dropdownClassName="absolute top-full right-0 mt-2 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
         </div>
       </div>

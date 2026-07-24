@@ -15,7 +15,6 @@ export default function RecordsPage() {
   const [completedFiles, setCompletedFiles] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState("All Files");
   const [contactDeetsFilter, setContactDeetsFilter] = useState("All Contact Deets");
   const [isImporting, setIsImporting] = useState(false);
@@ -203,15 +202,9 @@ export default function RecordsPage() {
       if (diffDays > timeRangeDays && !isNaN(diffDays)) return false;
     }
 
-    const matchesSearch =
-      r.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.status.toLowerCase().includes(searchQuery.toLowerCase());
-    
     const matchesFile = selectedFile === "All Files" || r.sourceFile === selectedFile;
 
-    return matchesSearch && matchesFile;
+    return matchesFile;
   });
 
   const getCompletenessScore = (r: RecordData) => {
@@ -405,23 +398,8 @@ export default function RecordsPage() {
             ))}
           </div>
 
-          {/* Search Input and File dropdown */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 flex-1 lg:max-w-4xl">
-            <div className="relative w-full flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search records keyword..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#14120e] border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all placeholder-gray-400"
-              />
-            </div>
-
+          {/* File dropdown and Filter */}
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 flex-1 lg:max-w-4xl">
             <div className="relative w-full sm:w-48 shrink-0">
               <CustomSelect
                 options={["All Contact Deets", "Complete contact info", "Email only", "Telephone only", "Phone only"]}

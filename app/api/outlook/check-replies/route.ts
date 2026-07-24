@@ -15,14 +15,19 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: Request) {
     try {
         // Require Azure credentials for real Outlook integration
         if (!process.env.AZURE_CLIENT_ID || 
             process.env.AZURE_CLIENT_ID.includes('your_azure') || 
+            process.env.AZURE_CLIENT_ID.includes('azure_') || 
             !process.env.AZURE_TENANT_ID || 
             process.env.AZURE_TENANT_ID.includes('your_azure') || 
-            !process.env.AZURE_CLIENT_SECRET) {
+            process.env.AZURE_TENANT_ID.includes('azure_') || 
+            !process.env.AZURE_CLIENT_SECRET ||
+            process.env.AZURE_CLIENT_SECRET.includes('azure_')) {
             // Return 200 OK instead of 400 so the browser console doesn't show a scary red error,
             // but return success: false so the frontend knows it didn't run.
             return NextResponse.json({ 

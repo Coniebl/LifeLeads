@@ -35,6 +35,9 @@ export function StatusView({
       try {
         setIsSyncing(true);
         const res = await fetch('/api/outlook/check-replies');
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
         const data = await res.json();
         if (data.success && data.message.includes('Updated') && !data.message.includes('0 leads')) {
           window.location.reload(); 

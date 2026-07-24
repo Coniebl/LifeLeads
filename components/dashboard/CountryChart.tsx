@@ -47,7 +47,7 @@ export function CountryChart({ countriesData }: CountryChartProps) {
           </p>
         </div>
       ) : (
-        <div className="w-full pb-8">
+        <div className="w-full pb-16">
           <div className="relative h-72 border-b border-gray-100 dark:border-white/5 flex items-end justify-between gap-1 sm:gap-2 px-1 sm:px-4 select-none w-full">
             {countries.map(([name, item]) => {
               const maxVal = Math.max(...countries.map(c => c[1].count), 8);
@@ -83,7 +83,7 @@ export function CountryChart({ countriesData }: CountryChartProps) {
                   />
                   
                   {/* Bottom Label (Country) */}
-                  <span className="absolute top-full mt-3 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] font-bold text-gray-500 dark:text-gray-400 text-center w-14 sm:w-24 truncate px-0.5">
+                  <span className="absolute top-full mt-3 left-1/2 -translate-x-1/2 -rotate-45 text-[9px] sm:text-[10px] font-bold text-gray-500 dark:text-gray-400 text-center w-20 sm:w-24 truncate px-0.5">
                     {name}
                   </span>
                 </div>
