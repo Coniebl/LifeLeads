@@ -51,9 +51,13 @@ export function SelectDropdown({
             {options.map((opt, i) => (
               <button
                 key={i}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   onChange(opt.value);
-                  setIsOpen(false);
+                  // Delay closing the dropdown slightly to prevent the click event from 
+                  // "falling through" and triggering the onClick of elements underneath it
+                  setTimeout(() => setIsOpen(false), 50);
                 }}
                 className={opt.special ? "w-full text-left px-4 py-2.5 text-sm font-bold bg-[#ffc370] text-[#133020] hover:bg-[#ffb347] transition-colors whitespace-pre" : `${value === opt.value ? activeOptionClassName : optionClassName} whitespace-pre`}
               >
