@@ -349,7 +349,7 @@ export function StatusView({
             value={selectedSource}
             onChange={setSelectedSource}
             options={allSources.map(s => ({ label: String(s), value: String(s) }))}
-            className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-[180px] max-w-[250px] shadow-xs"
+            className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-45 max-w-62.5 shadow-xs"
             dropdownClassName="absolute top-full right-0 mt-2 w-[280px] bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
             optionClassName="w-full text-left px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors whitespace-normal break-words"
             activeOptionClassName="w-full text-left px-4 py-2 text-xs font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347] whitespace-normal break-words"
@@ -358,9 +358,9 @@ export function StatusView({
       </div>
 
       {/* Tabulated Display */}
-      <div className="flex-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden flex flex-col min-h-[360px]">
+      <div className="flex-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden flex flex-col min-h-90">
         {/* Table Header */}
-        <div className="grid grid-cols-[40px_auto_2.5fr_1fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-4 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest overflow-visible">
+        <div className="grid grid-cols-[40px_auto_2.5fr_1fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-4 py-4 bg-gray-50/70 dark:bg-white/2 border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest overflow-visible">
           <div>No.</div>
           <div className="w-10"></div>
           <div className="min-w-0 truncate">Name / Organization</div>
