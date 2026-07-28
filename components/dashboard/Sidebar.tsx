@@ -86,6 +86,16 @@ export function Sidebar({
       ),
     },
     {
+      name: "Pipeline",
+      label: "Pipeline",
+      icon: (
+        <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+        </svg>
+      ),
+    },
+    {
       name: "Records",
       label: "Records",
       icon: (
@@ -141,8 +151,9 @@ export function Sidebar({
             else if (item.name === "Dashboard") isActive = pathname === "/dashboard" || pathname === "/";
             else if (item.name === "Status") isActive = pathname === "/status";
             else if (item.name === "Records") isActive = pathname === "/records";
+            else if (item.name === "Pipeline") isActive = pathname === "/pipeline";
 
-            const hasSubcategories = item.name === "Leads";
+            const hasSubcategories = item.name === "Leads" || item.name === "Pipeline";
 
             return (
               <div key={item.name} className="flex flex-col">
@@ -155,6 +166,7 @@ export function Sidebar({
                     else if (item.name === "Dashboard") router.push("/dashboard");
                     else if (item.name === "Status") router.push(`/status`);
                     else if (item.name === "Records") router.push("/records");
+                    else if (item.name === "Pipeline") router.push("/pipeline");
                   }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 ease-in-out cursor-pointer ${
                     isActive
@@ -180,32 +192,61 @@ export function Sidebar({
                 {/* Subcategories */}
                 {isActive && isExpanded && hasSubcategories && (
                   <div className="flex flex-col ml-[26px] pl-3 border-l border-white/20 mt-1 mb-2 gap-1 relative">
-                    <button
-                      onClick={() => router.push(`/${item.name.toLowerCase()}?category=Companies`)}
-                      className={`flex items-center gap-3 w-full text-left text-[13px] font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out ${
-                        category === "Companies"
-                          ? "bg-white text-[#133020] shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
-                          : "text-gray-300 hover:text-white hover:bg-white/10"
-                      }`}
-                    >
-                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0A2.25 2.25 0 001.5 12v4.5c0 1.242.946 2.228 2.155 2.247h16.69c1.21-.019 2.155-1.005 2.155-2.247V12a2.25 2.25 0 00-2.25-2.224m-16.5 0V7.5a2.25 2.25 0 012.25-2.25h4.018c.228 0 .446.102.588.277l1.414 1.768a1.5 1.5 0 001.176.556h5.304A2.25 2.25 0 0121 9.776" />
-                      </svg>
-                      Companies
-                    </button>
-                    <button
-                      onClick={() => router.push(`/${item.name.toLowerCase()}?category=Filipino Community Organizations`)}
-                      className={`flex items-center gap-3 w-full text-left text-[13px] font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out ${
-                        category === "Filipino Community Organizations"
-                          ? "bg-white text-[#133020] shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
-                          : "text-gray-300 hover:text-white hover:bg-white/10"
-                      }`}
-                    >
-                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                      </svg>
-                      Filipino Community Orgs
-                    </button>
+                    {item.name === "Leads" ? (
+                      <>
+                        <button
+                          onClick={() => router.push(`/${item.name.toLowerCase()}?category=Companies`)}
+                          className={`flex items-center gap-3 w-full text-left text-[13px] font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out ${
+                            category === "Companies"
+                              ? "bg-white text-[#133020] shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                              : "text-gray-300 hover:text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0A2.25 2.25 0 001.5 12v4.5c0 1.242.946 2.228 2.155 2.247h16.69c1.21-.019 2.155-1.005 2.155-2.247V12a2.25 2.25 0 00-2.25-2.224m-16.5 0V7.5a2.25 2.25 0 012.25-2.25h4.018c.228 0 .446.102.588.277l1.414 1.768a1.5 1.5 0 001.176.556h5.304A2.25 2.25 0 0121 9.776" />
+                          </svg>
+                          Companies
+                        </button>
+                        <button
+                          onClick={() => router.push(`/${item.name.toLowerCase()}?category=Filipino Community Organizations`)}
+                          className={`flex items-center gap-3 w-full text-left text-[13px] font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out ${
+                            category === "Filipino Community Organizations"
+                              ? "bg-white text-[#133020] shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                              : "text-gray-300 hover:text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                          </svg>
+                          Filipino Community Orgs
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => router.push(`/${item.name.toLowerCase()}?type=Hot Leads`)}
+                          className={`flex items-center gap-3 w-full text-left text-[13px] font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out ${
+                            searchParams.get("type") === "Hot Leads" || (!searchParams.get("type") && isActive)
+                              ? "bg-white text-orange-600 shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                              : "text-gray-300 hover:text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z" /></svg>
+                          Hot Leads
+                        </button>
+                        <button
+                          onClick={() => router.push(`/${item.name.toLowerCase()}?type=Cold Leads`)}
+                          className={`flex items-center gap-3 w-full text-left text-[13px] font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out ${
+                            searchParams.get("type") === "Cold Leads"
+                              ? "bg-white text-blue-600 shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                              : "text-gray-300 hover:text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.412 15.655 9.75 21.75l3.745-4.012M9.257 13.5H3.75l2.659-2.849m2.048-2.194L14.25 2.25l-1.658 6.096m1.116 2.052H20.25l-2.659 2.849" /></svg>
+                          Cold Leads
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -265,7 +306,7 @@ export function Sidebar({
                   {mounted && user ? user.name : "Loading..."}
                 </span>
                 <span className="text-[10px] text-gray-300 dark:text-white/60 leading-none mt-0.5 capitalize">
-                  {user?.role === 'admin' ? 'Administrator' : 'Standard User'}
+                  {user?.role === 'admin' ? 'Superadmin' : 'Admin'}
                 </span>
               </div>
             )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../supabase/client";
+import { normalizeLocationName, getCountryForLocation } from "../normalize";
 
 export type DashboardUser = { email: string; name: string; role?: string };
 
@@ -134,14 +135,15 @@ export function useDashboardData() {
           uniqueSources.add(r.source_file.trim());
         }
       });
-      setAvailableFiles(Array.from(uniqueSources).sort());
+      const fileOpts = Array.from(uniqueSources).sort();
+      setAvailableFiles(fileOpts);
 
       const allNames = Array.from(new Set(baseRecords.map(r => r.company_name?.trim()).filter(Boolean)));
       setAllCompanyNames(allNames);
 
       const records = baseRecords.filter(r => {
         if (dashboardSelectedFile === "All Files") return true;
-        return r.source_file?.trim() === dashboardSelectedFile;
+        return (r.source_file?.trim() || "") === dashboardSelectedFile;
       });
 
       let pendingCount = 0;
@@ -163,7 +165,7 @@ export function useDashboardData() {
         if (status === "Pending") pendingCount++;
         else if (status === "Accepted") acceptedCount++;
         else if (status === "Rejected") rejectedCount++;
-        else if (status === "Responded") respondedCount++;
+        else if (status === "Responded" || status === "Hot Lead" || status === "Cold Lead") respondedCount++;
         else inactiveCount++;
 
         const rawCountry = record.country || "Unknown";
@@ -205,11 +207,13 @@ export function useDashboardData() {
 
         industryCountMap[firstIndustry] = (industryCountMap[firstIndustry] || 0) + 1;
 
-        if (record.created_at) {
-          const date = new Date(record.created_at);
+        const dateStr = record.status_updated_at || record.created_at;
+        if (dateStr) {
+          const date = new Date(dateStr);
           const month = date.getMonth(); 
           if (!isNaN(month)) {
-            // Hot Leads and Cold Leads logic will be added later. Kept at 0 for now.
+            if (status === "Hot Lead") monthlyHotLeads[month]++;
+            else if (status === "Cold Lead") monthlyColdLeads[month]++;
           }
         }
       });

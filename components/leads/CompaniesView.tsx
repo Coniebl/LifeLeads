@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { UserPlusIcon } from "@heroicons/react/24/outline";
+import { formatLocationWithCountry, normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 import { CompanyCard, type CompanyData } from "./CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
 import { supabase } from "../../lib/supabase/client";
@@ -43,8 +45,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
   // Base list of leads matching the active category before text/dropdown filters
   const baseCompaniesForCategory = companies.filter(c => {
-    // Check if item has already been processed out of Leads
-    if (c.status === "Pending" || c.status === "Accepted" || c.status === "Rejected") {
+    // Only show items that are strictly Not Active (unprocessed)
+    if (c.status !== "Not Active") {
       return false;
     }
     // Classify category: use explicit category or infer from name
@@ -53,7 +55,22 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   });
 
   const allIndustries = ["All Industries", ...Array.from(new Set(baseCompaniesForCategory.flatMap(c => c.industries)))];
-  const allCountries = ["All Countries", ...Array.from(new Set(baseCompaniesForCategory.map(c => c.country)))];
+  
+  const rawCountries = Array.from(new Set(baseCompaniesForCategory.map(c => c.country ? normalizeLocationName(c.country) : "").filter(Boolean))).sort();
+  const usaCountries = rawCountries.filter(c => getCountryForLocation(c) === "USA");
+  const otherCountries = rawCountries.filter(c => getCountryForLocation(c) !== "USA");
+  const allCountries = ["All Countries"];
+  if (usaCountries.length > 0) {
+    allCountries.push("USA");
+    usaCountries.forEach(c => {
+      const lower = c.toLowerCase();
+      if (lower !== "usa" && lower !== "united states" && lower !== "us") {
+        allCountries.push(`  ↳ ${c}`);
+      }
+    });
+  }
+  otherCountries.forEach(c => allCountries.push(c));
+
   const allSources = ["All Records", ...Array.from(new Set(baseCompaniesForCategory.map(c => c.source).filter(Boolean)))] as string[];
 
   // Apply search and dropdown filters
@@ -62,7 +79,10 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                           c.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (c.contactPerson && c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
-    const matchesCountry = selectedCountry === "All Countries" || c.country === selectedCountry;
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const matchesCountry = selectedCountry === "All Countries" || 
+           (selectedCountry === "USA" && getCountryForLocation(normCountry) === "USA") ||
+           normCountry === selectedCountry.replace('↳', '').trim();
     const matchesSource = selectedSource === "All Records" || (c.source || "Unknown") === selectedSource;
     return matchesSearch && matchesIndustry && matchesCountry && matchesSource;
   });

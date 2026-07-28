@@ -206,9 +206,9 @@ export function DashboardGreetingCard() {
             >
               <span 
                 className={`glitch-idle-active ${isGlitching ? "opacity-0" : "opacity-100 transition-opacity duration-200"}`}
-                data-text={`${user?.role === 'admin' ? 'Admin' : 'User'}.`}
+                data-text={`${user?.role === 'admin' ? 'Superadmin' : 'Admin'}.`}
               >
-                {user?.role === 'admin' ? 'Admin' : 'User'}.
+                {user?.role === 'admin' ? 'Superadmin' : 'Admin'}.
               </span>
               {isGlitching && (
                 <span className="absolute top-0 left-0 pointer-events-none whitespace-nowrap z-10">

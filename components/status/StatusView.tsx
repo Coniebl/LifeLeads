@@ -4,6 +4,7 @@ import { type CompanyData } from "../leads/CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 
 export function StatusView({ 
   companies, 
@@ -29,52 +30,50 @@ export function StatusView({
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Poll Outlook integration API for new replies every 1 minute
-  useEffect(() => {
-    const checkReplies = async () => {
-      try {
-        setIsSyncing(true);
-        const res = await fetch('/api/outlook/check-replies');
-        const data = await res.json();
-        if (data.success && data.message.includes('Updated') && !data.message.includes('0 leads')) {
-          window.location.reload(); 
-        }
-      } catch (err) {
-        console.error('Failed to sync outlook replies:', err);
-      } finally {
-        setIsSyncing(false);
-      }
-    };
-
-    checkReplies();
-    const interval = setInterval(checkReplies, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Polling removed as per user request to handle sync manually in Pipeline tab
 
   // 1. Derive dropdown filter options
   const allClassifications = ["All Classifications", "Companies", "Filipino Community Organizations"];
-  const allSources = ["All Files", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean)))];
+  const allSources = ["All Files", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean)))].sort();
   const allIndustries = ["All Industries", ...Array.from(new Set(companies.flatMap(c => c.industries)))];
-  const allCountries = ["All Countries", ...Array.from(new Set(companies.map(c => c.country)))];
+  
+  const rawCountries = Array.from(new Set(companies.map(c => c.country ? normalizeLocationName(c.country) : "").filter(Boolean))).sort();
+  const usaCountries = rawCountries.filter(c => getCountryForLocation(c) === "USA");
+  const otherCountries = rawCountries.filter(c => getCountryForLocation(c) !== "USA");
+
+  const allCountries = ["All Countries"];
+  if (usaCountries.length > 0) {
+    allCountries.push("USA");
+    usaCountries.forEach(c => {
+      const lower = c.toLowerCase();
+      if (lower !== "usa" && lower !== "united states" && lower !== "us") {
+        allCountries.push(`  ↳ ${c}`);
+      }
+    });
+  }
+  otherCountries.forEach(c => allCountries.push(c));
 
   // 2. Apply dropdown filters
   const filteredCompanies = companies.filter(c => {
     const matchClassification = selectedClassification === "All Classifications" || (c.category || "Companies") === selectedClassification;
-    const matchSource = selectedSource === "All Files" || c.source === selectedSource;
+    const matchSource = selectedSource === "All Files" || (c.source || "Unknown") === selectedSource;
     const matchIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
-    const matchCountry = selectedCountry === "All Countries" || c.country === selectedCountry;
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const matchCountry = selectedCountry === "All Countries" || 
+           (selectedCountry === "USA" && getCountryForLocation(normCountry) === "USA") ||
+           normCountry === selectedCountry.replace('↳', '').trim();
     return matchClassification && matchSource && matchIndustry && matchCountry;
   });
 
   // 3. Derived Stats
   const totalCount = filteredCompanies.length;
   const pendingCount = filteredCompanies.filter(c => c.status === "Pending").length;
-  const respondedCount = filteredCompanies.filter(c => c.status === "Responded").length;
+  const respondedCount = filteredCompanies.filter(c => c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead").length;
   const inactiveCount = filteredCompanies.filter(c => !c.status || c.status === "Not Active").length;
 
   // 4. Filter by active Status Pill (Pending, Responded, Not Active)
   const tabulatedCompanies = filteredCompanies.filter(c => {
-    if (statusTab === "Responded") return c.status === "Responded";
+    if (statusTab === "Responded") return c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead";
     if (statusTab === "Not Active") return !c.status || c.status === "Not Active";
     return c.status === "Pending";
   });
@@ -90,6 +89,8 @@ export function StatusView({
       case "Rejected": return "text-red-600 bg-red-100 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800";
       case "Pending": return "text-[#b45309] bg-[#ffb347]/15 border-[#ffb347]/30 dark:text-[#ffb347] dark:bg-[#ffb347]/10";
       case "Responded": return "text-[#0d9488] bg-[#0d9488]/15 border-[#0d9488]/30 dark:text-[#2dd4bf] dark:bg-[#0d9488]/10";
+      case "Hot Lead": return "text-orange-600 bg-orange-100 border-orange-200 dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800";
+      case "Cold Lead": return "text-blue-600 bg-blue-100 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800";
       default: return "text-gray-600 bg-gray-100 border-gray-200 dark:text-gray-400 dark:bg-gray-800 dark:border-gray-700";
     }
   };
@@ -100,6 +101,8 @@ export function StatusView({
       case "Rejected": return "bg-red-600";
       case "Pending": return "bg-[#ffb347]";
       case "Responded": return "bg-[#0d9488]";
+      case "Hot Lead": return "bg-orange-600";
+      case "Cold Lead": return "bg-blue-600";
       default: return "bg-gray-400 dark:bg-gray-500";
     }
   };
@@ -294,7 +297,7 @@ export function StatusView({
         <div className="flex items-center flex-wrap gap-2">
           {(["Not Active", "Pending", "Responded"] as const).map((tab) => {
             const count = filteredCompanies.filter(c => {
-              if (tab === "Responded") return c.status === "Responded";
+              if (tab === "Responded") return c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead";
               if (tab === "Not Active") return !c.status || c.status === "Not Active";
               return c.status === "Pending";
             }).length;
@@ -453,7 +456,7 @@ export function StatusView({
                 {/* Status */}
                 <div>
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold border ${getStatusColor(company.status || "Not Active")}`}>
-                    <span className={`w-2 h-2 rounded-full ${company.status === 'Accepted' ? 'bg-[#046241] dark:bg-[#4ade80]' : company.status === 'Rejected' ? 'bg-red-600' : company.status === 'Responded' ? 'bg-[#0d9488] dark:bg-[#2dd4bf]' : company.status === 'Pending' ? 'bg-[#ffb347]' : 'bg-gray-400'}`} />
+                    <span className={`w-2 h-2 rounded-full ${company.status === 'Accepted' ? 'bg-[#046241] dark:bg-[#4ade80]' : company.status === 'Rejected' ? 'bg-red-600' : company.status === 'Responded' ? 'bg-[#0d9488] dark:bg-[#2dd4bf]' : company.status === 'Hot Lead' ? 'bg-orange-500' : company.status === 'Cold Lead' ? 'bg-blue-500' : company.status === 'Pending' ? 'bg-[#ffb347]' : 'bg-gray-400'}`} />
                     {company.status || "Not Active"}
                   </span>
                 </div>

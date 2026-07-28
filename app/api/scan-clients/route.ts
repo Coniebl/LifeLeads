@@ -74,28 +74,68 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "SERPAPI_KEY is not set." }, { status: 400 });
       }
       const q = `${searchIndustryArray.length > 0 ? searchIndustryArray[0] : (industries[0] || "Business")} in ${location}`;
-      const serpRes = await fetch(`https://serpapi.com/search.json?engine=google_local&q=${encodeURIComponent(q)}&api_key=${serpApiKey}`);
+      let allMapped: any[] = [];
+      let start = 0;
       
-      if (!serpRes.ok) {
-         return NextResponse.json({ error: "SerpApi request failed" }, { status: 500 });
+      // Loop up to 6 times to get around 120 results, ensuring we can return 100 exactly
+      for (let i = 0; i < 6; i++) {
+        const serpRes = await fetch(`https://serpapi.com/search.json?engine=google_local&q=${encodeURIComponent(q)}&start=${start}&api_key=${serpApiKey}`);
+        
+        if (!serpRes.ok) {
+           break;
+        }
+        const serpData = await serpRes.json();
+        const localResults = serpData.local_results || [];
+        
+        if (localResults.length === 0) {
+           break;
+        }
+        
+        const mapped = localResults.map((r: any) => ({
+           company_name: r.title || "",
+           contact_person: "Not Provided",
+           designation: "Not Provided",
+           contact_email: "",
+           contact_telephone: r.phone || "",
+           office_location: r.address || location,
+           company_website: r.website || r.links?.website || "",
+           company_linkedin: "",
+           industries: r.type || searchIndustryArray[0] || industries[0] || "Unspecified",
+           country: location
+        }));
+        
+        allMapped.push(...mapped);
+        start += 20;
       }
-      const serpData = await serpRes.json();
-      const localResults = serpData.local_results || [];
       
-      const mapped = localResults.map((r: any) => ({
-         company_name: r.title || "",
-         contact_person: "Not Provided",
-         designation: "Not Provided",
-         contact_email: "",
-         contact_telephone: r.phone || "",
-         office_location: r.address || location,
-         company_website: r.website || r.links?.website || "",
-         company_linkedin: "",
-         industries: r.type || searchIndustryArray[0] || industries[0] || "Unspecified",
-         country: location
-      }));
+      const uniqueResults = allMapped.filter((r: any, index: number, self: any[]) => {
+        if (!r.company_name || r.company_name.trim() === "") return false;
+        if (existingCompanyNames.includes(r.company_name.toLowerCase())) return false;
+        return self.findIndex(t => t.company_name === r.company_name) === index;
+      });
       
-      const finalResults = mapped.filter((r: any) => r.company_name !== "" && (r.contact_email !== "" || r.contact_telephone !== ""));
+      // Bucket A: Leads with BOTH email and phone
+      const strictLeads = uniqueResults.filter((r: any) => {
+        const hasEmail = r.contact_email && r.contact_email.trim() !== "";
+        const hasPhone = (r.contact_telephone && r.contact_telephone.trim() !== "") || (r.contact_mobile && r.contact_mobile.trim() !== "");
+        return hasEmail && hasPhone;
+      });
+
+      // Bucket B: Leads with EITHER email or phone
+      const partialLeads = uniqueResults.filter((r: any) => {
+        const hasEmail = r.contact_email && r.contact_email.trim() !== "";
+        const hasPhone = (r.contact_telephone && r.contact_telephone.trim() !== "") || (r.contact_mobile && r.contact_mobile.trim() !== "");
+        return (hasEmail || hasPhone) && !(hasEmail && hasPhone);
+      });
+      
+      let finalResults = [];
+      if (strictLeads.length >= 100) {
+        finalResults = strictLeads.slice(0, 100);
+      } else {
+        const needed = 100 - strictLeads.length;
+        finalResults = [...strictLeads, ...partialLeads.slice(0, needed)];
+      }
+
       return NextResponse.json({ results: finalResults });
     } else {
       return NextResponse.json({ error: "Invalid engine specified." }, { status: 400 });
@@ -191,11 +231,11 @@ export async function POST(request: Request) {
                return hasEmail && hasPhone;
              });
 
-             // Bucket B: Leads with ONLY email (no phone)
-             const emailOnlyLeads = uniqueResults.filter((r: any) => {
+             // Bucket B: Leads with EITHER email OR phone
+             const partialLeads = uniqueResults.filter((r: any) => {
                const hasEmail = r.contact_email && r.contact_email.trim() !== "";
                const hasPhone = (r.contact_telephone && r.contact_telephone.trim() !== "") || (r.contact_mobile && r.contact_mobile.trim() !== "");
-               return hasEmail && !hasPhone;
+               return (hasEmail || hasPhone) && !(hasEmail && hasPhone);
              });
 
              // Fill up to 100 results, prioritizing strict leads
@@ -203,7 +243,7 @@ export async function POST(request: Request) {
                finalResults = strictLeads.slice(0, 100);
              } else {
                const needed = 100 - strictLeads.length;
-               finalResults = [...strictLeads, ...emailOnlyLeads.slice(0, needed)];
+               finalResults = [...strictLeads, ...partialLeads.slice(0, needed)];
              }
           }
        }

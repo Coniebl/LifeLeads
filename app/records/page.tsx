@@ -5,6 +5,8 @@ import * as xlsx from "xlsx";
 import { supabase, fetchAllCompanyContacts } from "../../lib/supabase/client";
 import { RecordsTable, type RecordData } from "../../components/records/RecordsTable";
 import { CompletedFilesModal } from "../../components/records/CompletedFilesModal";
+import { ExportConfigModal } from "../../components/records/ExportConfigModal";
+import { normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 import { ScanClientsModal } from "../../components/records/ScanClientsModal";
 import { CustomSelect } from "../../components/ui/CustomSelect";
 import { SelectDropdown } from "../../components/ui/SelectDropdown";
@@ -155,7 +157,9 @@ export default function RecordsPage() {
       })
       .map((r) => r.sourceFile)
       .filter(Boolean)
-  ));
+  )).sort() as string[];
+
+  const fileOptions = ["All Files", ...availableFiles];
 
   const formattedDate = () => {
     return new Date().toLocaleDateString("en-US", {
@@ -209,7 +213,9 @@ export default function RecordsPage() {
       r.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.status.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesFile = selectedFile === "All Files" || r.sourceFile === selectedFile;
+    const matchesFile = 
+      selectedFile === "All Files" || 
+      r.sourceFile === selectedFile;
 
     return matchesSearch && matchesFile;
   });
@@ -246,7 +252,7 @@ export default function RecordsPage() {
 
   const handleDeleteCompletedFiles = async (filesToDelete: string[]) => {
     try {
-      const recordsToDelete = records.filter(r => filesToDelete.includes(r.sourceFile));
+      const recordsToDelete = records.filter(r => r.sourceFile && filesToDelete.includes(normalizeSourceName(r.sourceFile)));
       const deletedImports = JSON.parse(localStorage.getItem('lifelead_deleted_imports') || '[]');
       
       recordsToDelete.forEach(r => {
@@ -432,7 +438,7 @@ export default function RecordsPage() {
 
             <div className="relative w-full sm:w-48 shrink-0">
               <CustomSelect
-                options={["All Files", ...availableFiles]}
+                options={fileOptions}
                 value={selectedFile}
                 onChange={setSelectedFile}
               />

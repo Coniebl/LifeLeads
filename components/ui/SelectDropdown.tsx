@@ -55,7 +55,7 @@ export function SelectDropdown({
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={opt.special ? "w-full text-left px-4 py-2.5 text-sm font-bold bg-[#ffc370] text-[#133020] hover:bg-[#ffb347] transition-colors" : (value === opt.value ? activeOptionClassName : optionClassName)}
+                className={opt.special ? "w-full text-left px-4 py-2.5 text-sm font-bold bg-[#ffc370] text-[#133020] hover:bg-[#ffb347] transition-colors whitespace-pre" : `${value === opt.value ? activeOptionClassName : optionClassName} whitespace-pre`}
               >
                 {opt.label}
               </button>
