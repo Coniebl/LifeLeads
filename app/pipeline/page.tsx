@@ -38,6 +38,7 @@ export default function PipelinePage() {
             type: inferredCat,
             dateAdded: r.created_at,
             status: r.status,
+            source: r.source_file,
           };
         });
 
