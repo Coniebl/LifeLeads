@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { formatLocationWithCountry, normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 
 export type RecordStatus = "Pending" | "Accepted" | "Rejected";
 
@@ -38,7 +39,24 @@ export function RecordsTable({ records }: RecordsTableProps) {
   });
 
   // Compute unique values for dropdowns
-  const uniqueCountries = useMemo(() => Array.from(new Set(records.map(r => r.country))).sort(), [records]);
+  const uniqueCountries = useMemo(() => {
+    const rawCountries = Array.from(new Set(records.map(r => r.country ? normalizeLocationName(r.country) : ""))).filter(Boolean).sort();
+    const usaCountries = rawCountries.filter(c => getCountryForLocation(c) === "USA");
+    const otherCountries = rawCountries.filter(c => getCountryForLocation(c) !== "USA");
+    
+    const fileOpts: string[] = [];
+    if (usaCountries.length > 0) {
+      fileOpts.push("USA");
+      usaCountries.forEach(c => {
+        const lower = c.toLowerCase();
+        if (lower !== "usa" && lower !== "united states" && lower !== "us") {
+          fileOpts.push(`  ↳ ${c}`);
+        }
+      });
+    }
+    otherCountries.forEach(c => fileOpts.push(c));
+    return fileOpts;
+  }, [records]);
   const uniqueStatuses = useMemo(() => Array.from(new Set(records.map(r => r.status || "Pending"))).sort(), [records]);
   const uniqueDates = useMemo(() => Array.from(new Set(records.map(r => r.dateAdded))).sort(), [records]);
   const uniqueIndustries = useMemo(() => {
@@ -53,8 +71,15 @@ export function RecordsTable({ records }: RecordsTableProps) {
   // Filter records
   const filteredRecords = useMemo(() => {
     let result = records.filter((record) => {
-      if (filters.country.length > 0 && !filters.country.includes(record.country)) return false;
       if (filters.status.length > 0 && !filters.status.includes(record.status || "Pending")) return false;
+      if (filters.country.length > 0) {
+        const normCountry = record.country ? normalizeLocationName(record.country) : "";
+        const countryMatch = filters.country.some(opt => {
+          if (opt === "USA") return getCountryForLocation(normCountry) === "USA";
+          return normCountry === opt.replace('↳', '').trim();
+        });
+        if (!countryMatch) return false;
+      }
       if (filters.dateAdded.length > 0 && !filters.dateAdded.includes(record.dateAdded)) return false;
       
       if (filters.industry.length > 0) {
@@ -157,7 +182,7 @@ export function RecordsTable({ records }: RecordsTableProps) {
                        onChange={() => toggleFilter(columnKey, opt)}
                        className="rounded border-gray-300 text-[#046241] focus:ring-[#046241]"
                      />
-                     <span className="truncate text-xs font-bold text-[#133020] dark:text-gray-200">{opt}</span>
+                     <span className="truncate text-xs font-bold text-[#133020] dark:text-gray-200 whitespace-pre">{opt}</span>
                    </label>
                  ))
                )}
@@ -244,8 +269,8 @@ export function RecordsTable({ records }: RecordsTableProps) {
                       {record.category || "Companies"}
                     </span>
                   </td>
-                  <td className="py-4 px-6 text-xs font-bold text-gray-600 dark:text-gray-300 whitespace-nowrap align-top">
-                    {record.country}
+                  <td className="px-4 py-3 align-middle text-sm text-[#133020] dark:text-gray-300">
+                    {formatLocationWithCountry(record.country)}
                   </td>
                   <td className="py-4 px-6 whitespace-nowrap align-top">
                     <div className="flex gap-1 flex-wrap">

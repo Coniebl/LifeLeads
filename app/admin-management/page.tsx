@@ -208,7 +208,7 @@ export default function AdminManagementPage() {
                           ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300' 
                           : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
                       }`}>
-                        {profile.role}
+                        {profile.role === 'admin' ? 'Superadmin' : 'Admin'}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-500 dark:text-gray-400">
@@ -315,8 +315,8 @@ export default function AdminManagementPage() {
                     value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}
                     className="w-full px-4 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-[#046241]/20 focus:border-[#046241] outline-none transition-all dark:text-white appearance-none"
                   >
-                    <option value="user" className="text-gray-900">Standard User</option>
-                    <option value="admin" className="text-gray-900">Administrator</option>
+                    <option value="user" className="text-gray-900">Admin</option>
+                    <option value="admin" className="text-gray-900">Superadmin</option>
                   </select>
                 </div>
               </form>

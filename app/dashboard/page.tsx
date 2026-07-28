@@ -75,8 +75,8 @@ export default function DashboardPage() {
               <MonthlyOffersChart 
                 selectedFile={dashboardSelectedFile} 
                 hasData={stats.acceptedOfferCount > 0 || stats.rejectedCount > 0 || stats.respondedCount > 0} 
-                monthlyAccepted={stats.monthlyAccepted}
-                monthlyRejected={stats.monthlyRejected}
+                monthlyHotLeads={stats.monthlyHotLeads}
+                monthlyColdLeads={stats.monthlyColdLeads}
               />
             </div>
 

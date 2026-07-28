@@ -52,7 +52,7 @@ export function CustomSelect({ options, value, onChange }: CustomSelectProps) {
                 onChange(option);
                 setIsOpen(false);
               }}
-              className={`px-4 py-2.5 text-sm font-bold cursor-pointer transition-colors ${
+              className={`px-4 py-2.5 text-sm font-bold cursor-pointer transition-colors whitespace-pre ${
                 value === option
                   ? "bg-[#046241]/10 text-[#046241] dark:bg-[#4ade80]/20 dark:text-[#4ade80]"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10"
