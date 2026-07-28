@@ -34,7 +34,7 @@ export function StatusView({
 
   // 1. Derive dropdown filter options
   const allClassifications = ["All Classifications", "Companies", "Filipino Community Organizations"];
-  const allSources = ["All Files", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean)))].sort();
+  const allSources = ["All Files", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b)))];
   const allIndustries = ["All Industries", ...Array.from(new Set(companies.flatMap(c => c.industries)))];
   
   const rawCountries = Array.from(new Set(companies.map(c => c.country ? normalizeLocationName(c.country) : "").filter(Boolean))).sort();
@@ -63,6 +63,11 @@ export function StatusView({
            (selectedCountry === "USA" && getCountryForLocation(normCountry) === "USA") ||
            normCountry === selectedCountry.replace('↳', '').trim();
     return matchClassification && matchSource && matchIndustry && matchCountry;
+  }).sort((a, b) => {
+    const order: Record<string, number> = { "Hot Lead": 1, "Cold Lead": 2 };
+    const aOrder = order[a.status || ""] || 99;
+    const bOrder = order[b.status || ""] || 99;
+    return aOrder - bOrder;
   });
 
   // 3. Derived Stats
@@ -71,7 +76,6 @@ export function StatusView({
   const respondedCount = filteredCompanies.filter(c => c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead").length;
   const inactiveCount = filteredCompanies.filter(c => !c.status || c.status === "Not Active").length;
 
-  // 4. Filter by active Status Pill (Pending, Responded, Not Active)
   const tabulatedCompanies = filteredCompanies.filter(c => {
     if (statusTab === "Responded") return c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead";
     if (statusTab === "Not Active") return !c.status || c.status === "Not Active";
@@ -113,6 +117,7 @@ export function StatusView({
     const generateExportData = (companies: typeof filteredCompanies) => {
       return companies.map(c => ({
         "Company Name": c.name,
+        "Classification": c.category || "Companies",
         "Contact Person": c.contactPerson || "Not Provided",
         "Designation": c.designation || "Not Provided",
         "Contact Mobile": c.contactMobile || "Not Provided",
@@ -120,9 +125,9 @@ export function StatusView({
         "Email": c.email || "Not Provided",
         "Industry": c.industries.join(", "),
         "Country": c.country,
-        "Status": c.status || "Not Active",
+        "Pipeline Category / Status": c.status || "Not Active",
         "Source File": c.source || "Unknown",
-        "Joined/Updated": c.updatedAt || "N/A",
+        "Updated": c.updatedAt || "Today",
         "LinkedIn": c.linkedin || "",
         "Website": c.website || ""
       }));
@@ -131,18 +136,16 @@ export function StatusView({
     const allData = generateExportData(filteredCompanies);
     const notActiveData = generateExportData(filteredCompanies.filter(c => !c.status || c.status === "Not Active"));
     const pendingData = generateExportData(filteredCompanies.filter(c => c.status === "Pending"));
-    const respondedData = generateExportData(filteredCompanies.filter(c => c.status === "Responded"));
-    const acceptedData = generateExportData(filteredCompanies.filter(c => c.status === "Accepted"));
-    const rejectedData = generateExportData(filteredCompanies.filter(c => c.status === "Rejected"));
+    const respondedData = generateExportData(filteredCompanies.filter(c => c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead"));
 
     const addSheet = (data: any[], name: string, tabColor: string) => {
       const ws = wb.addWorksheet(name);
       ws.properties.tabColor = { argb: tabColor };
       
       const displayData = data.length > 0 ? data : [{
-        "Company Name": "", "Contact Person": "", "Designation": "", 
+        "Company Name": "", "Classification": "", "Contact Person": "", "Designation": "", 
         "Contact Mobile": "", "Contact Telephone": "", "Email": "", "Industry": "", "Country": "", 
-        "Status": "", "Source File": "", "Joined/Updated": "", 
+        "Pipeline Category / Status": "", "Source File": "", "Updated": "", 
         "LinkedIn": "", "Website": ""
       }];
       
@@ -151,6 +154,24 @@ export function StatusView({
       
       if (data.length > 0) {
         ws.addRows(data);
+        
+        // We will apply filter to the whole row because exceljs does not support selective hidden buttons for autofilter
+        ws.autoFilter = `A1:${String.fromCharCode(64 + headers.length)}1`;
+
+        // Add color formatting for Pipeline Category
+        const statusColIndex = headers.indexOf("Pipeline Category / Status") + 1;
+        if (statusColIndex > 0) {
+          ws.eachRow((row, rowNumber) => {
+            if (rowNumber > 1) { // Skip header
+              const cell = row.getCell(statusColIndex);
+              if (cell.value === 'Hot Lead') {
+                cell.font = { color: { argb: 'FFDC2626' }, bold: true }; // Red
+              } else if (cell.value === 'Cold Lead') {
+                cell.font = { color: { argb: 'FF2563EB' }, bold: true }; // Blue
+              }
+            }
+          });
+        }
       } else {
         // Add an empty row just to get headers formatted properly
         ws.addRow(headers.reduce((acc, h) => ({...acc, [h]: ""}), {}));
@@ -179,8 +200,6 @@ export function StatusView({
     addSheet(notActiveData, "Not Active", "FF9CA3AF"); // Gray
     addSheet(pendingData, "Pending", "FFF59E0B"); // Orange
     addSheet(respondedData, "Responded", "FF0D9488"); // Blue Green
-    addSheet(acceptedData, "Accepted", "FF10B981"); // Bright Green
-    addSheet(rejectedData, "Rejected", "FFEF4444"); // Red
 
     const safeTitle = selectedClassification.replace(/[\/\?\*\[\]:]/g, "_").substring(0, 31);
     const buffer = await wb.xlsx.writeBuffer();
@@ -200,7 +219,7 @@ export function StatusView({
       console.error("Failed to log export", e);
     }
     
-    showToast(`Exported ${filteredCompanies.length} records across 6 sheets!`);
+    showToast(`Exported ${filteredCompanies.length} records across 4 sheets!`);
   };
 
   const handleUpdateStatus = async (newStatus: "Accepted" | "Rejected" | "Responded") => {
@@ -330,10 +349,10 @@ export function StatusView({
             value={selectedSource}
             onChange={setSelectedSource}
             options={allSources.map(s => ({ label: String(s), value: String(s) }))}
-            className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-[180px] shadow-xs"
-            dropdownClassName="absolute top-full right-0 mt-2 w-[220px] bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors truncate"
-            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347] truncate"
+            className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-[180px] max-w-[250px] shadow-xs"
+            dropdownClassName="absolute top-full right-0 mt-2 w-[280px] bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
+            optionClassName="w-full text-left px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors whitespace-normal break-words"
+            activeOptionClassName="w-full text-left px-4 py-2 text-xs font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347] whitespace-normal break-words"
           />
         </div>
       </div>

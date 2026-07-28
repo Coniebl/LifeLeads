@@ -44,7 +44,7 @@ export function CustomSelect({ options, value, onChange }: CustomSelectProps) {
 
       {/* Dropdown Options */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-white dark:bg-[#181512] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden py-1">
+        <div className="absolute z-50 w-full mt-2 bg-white dark:bg-[#181512] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl max-h-64 overflow-y-auto overflow-x-hidden py-1">
           {options.map((option) => (
             <div
               key={option}
@@ -52,10 +52,10 @@ export function CustomSelect({ options, value, onChange }: CustomSelectProps) {
                 onChange(option);
                 setIsOpen(false);
               }}
-              className={`px-4 py-2.5 text-sm font-bold cursor-pointer transition-colors whitespace-pre ${
+              className={`px-4 py-2 text-xs cursor-pointer transition-colors whitespace-normal break-words ${
                 value === option
-                  ? "bg-[#046241]/10 text-[#046241] dark:bg-[#4ade80]/20 dark:text-[#4ade80]"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10"
+                  ? "font-bold bg-[#046241]/10 text-[#046241] dark:bg-[#4ade80]/20 dark:text-[#4ade80]"
+                  : "font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10"
               }`}
             >
               {option}
