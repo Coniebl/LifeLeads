@@ -206,9 +206,9 @@ export function DashboardGreetingCard() {
             >
               <span 
                 className={`glitch-idle-active ${isGlitching ? "opacity-0" : "opacity-100 transition-opacity duration-200"}`}
-                data-text={`${user?.role === 'admin' ? 'Admin' : 'User'}.`}
+                data-text={`${user?.role === 'admin' ? 'Superadmin' : 'Admin'}.`}
               >
-                {user?.role === 'admin' ? 'Admin' : 'User'}.
+                {user?.role === 'admin' ? 'Superadmin' : 'Admin'}.
               </span>
               {isGlitching && (
                 <span className="absolute top-0 left-0 pointer-events-none whitespace-nowrap z-10">
@@ -288,10 +288,10 @@ export function DashboardGreetingCard() {
                   {/* Decorative dots from data */}
                   {day && calendarEvents[day] && (
                     <div className="absolute -bottom-1 flex flex-wrap justify-center gap-0.5 px-1 w-full pointer-events-none">
-                      <span className="w-1 h-1 rounded-full bg-[#ccff00]"></span>
-                      <span className="w-1 h-1 rounded-full bg-[#ffb347]"></span>
-                      <span className="w-1 h-1 rounded-full bg-[#3b82f6]"></span>
-                      <span className="w-1 h-1 rounded-full bg-[#ec4899]"></span>
+                      {calendarEvents[day].imports.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#ccff00]"></span>}
+                      {calendarEvents[day].imports.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ffb347]"></span>}
+                      {calendarEvents[day].exports.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#3b82f6]"></span>}
+                      {calendarEvents[day].exports.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ec4899]"></span>}
                     </div>
                   )}
                 </div>
@@ -299,26 +299,14 @@ export function DashboardGreetingCard() {
             })}
           </div>
 
-          <div className="flex flex-col gap-y-2 mt-6 pt-4 border-t border-white/10">
-            <div className="flex flex-wrap items-center gap-x-3">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Companies</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Orgs</span>
-              </div>
+          <div className="flex items-center justify-center gap-x-6 mt-6 pt-4 border-t border-white/10">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Companies</span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"></span>
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Exp. Companies</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#ec4899]"></span>
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Exp. Orgs</span>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Orgs</span>
             </div>
           </div>
         </div>

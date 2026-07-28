@@ -5,6 +5,9 @@ import * as xlsx from "xlsx";
 import { supabase, fetchAllCompanyContacts } from "../../lib/supabase/client";
 import { RecordsTable, type RecordData } from "../../components/records/RecordsTable";
 import { CompletedFilesModal } from "../../components/records/CompletedFilesModal";
+import { ExportConfigModal } from "../../components/records/ExportConfigModal";
+import { normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
+import { ScanClientsModal } from "../../components/records/ScanClientsModal";
 import { CustomSelect } from "../../components/ui/CustomSelect";
 import { SelectDropdown } from "../../components/ui/SelectDropdown";
 
@@ -13,9 +16,11 @@ export default function RecordsPage() {
   const [records, setRecords] = useState<RecordData[]>([]);
   const [completedFiles, setCompletedFiles] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState("All Files");
+  const [contactDeetsFilter, setContactDeetsFilter] = useState("All Contact Deets");
   const [isImporting, setIsImporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New features state
@@ -152,7 +157,9 @@ export default function RecordsPage() {
       })
       .map((r) => r.sourceFile)
       .filter(Boolean)
-  ));
+  )).sort() as string[];
+
+  const fileOptions = ["All Files", ...availableFiles];
 
   const formattedDate = () => {
     return new Date().toLocaleDateString("en-US", {
@@ -176,6 +183,23 @@ export default function RecordsPage() {
       if (!matchCat) return false;
     }
 
+    // Contact Deets filter
+    if (contactDeetsFilter !== "All Contact Deets") {
+      const hasEmail = r.email !== "" && r.email.toLowerCase() !== "n/a";
+      const hasPhone = r.phone !== "" && r.phone.toLowerCase() !== "n/a";
+      const hasTelephone = r.telephone !== "" && r.telephone.toLowerCase() !== "n/a";
+
+      if (contactDeetsFilter === "Complete contact info") {
+        if (!hasEmail || !hasPhone || !hasTelephone) return false;
+      } else if (contactDeetsFilter === "Email only") {
+        if (!hasEmail || hasPhone || hasTelephone) return false;
+      } else if (contactDeetsFilter === "Telephone only") {
+        if (!hasTelephone || hasEmail || hasPhone) return false;
+      } else if (contactDeetsFilter === "Phone only") {
+        if (!hasPhone || hasEmail || hasTelephone) return false;
+      }
+    }
+
     // Time range filter
     if (timeRangeDays < 365) {
       const recDate = new Date(r.dateAdded).getTime();
@@ -183,19 +207,36 @@ export default function RecordsPage() {
       if (diffDays > timeRangeDays && !isNaN(diffDays)) return false;
     }
 
+    const sq = searchQuery.toLowerCase();
     const matchesSearch =
-      r.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.status.toLowerCase().includes(searchQuery.toLowerCase());
+      (r.companyName || "").toLowerCase().includes(sq) ||
+      (r.country || "").toLowerCase().includes(sq) ||
+      (r.contactPerson || "").toLowerCase().includes(sq) ||
+      (r.status || "").toLowerCase().includes(sq);
     
-    const matchesFile = selectedFile === "All Files" || r.sourceFile === selectedFile;
+    const matchesFile = 
+      selectedFile === "All Files" || 
+      r.sourceFile === selectedFile;
 
-    return matchesSearch && matchesFile;
+    return matchesFile && matchesSearch;
   });
+
+  const getCompletenessScore = (r: RecordData) => {
+    let score = 0;
+    if (r.email && r.email !== "" && r.email.toLowerCase() !== "n/a") score += 1;
+    if (r.phone && r.phone !== "" && r.phone.toLowerCase() !== "n/a") score += 1;
+    if (r.telephone && r.telephone !== "" && r.telephone.toLowerCase() !== "n/a") score += 1;
+    return score;
+  };
 
   const statusOrder: Record<string, number> = { "Not Active": 1, "Pending": 2, "Accepted": 3, "Rejected": 4 };
   const sortedRecords = [...filteredRecords].sort((a, b) => {
+    const scoreA = getCompletenessScore(a);
+    const scoreB = getCompletenessScore(b);
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA; // Complete details first
+    }
+
     const orderA = a.status ? statusOrder[a.status] : 4;
     const orderB = b.status ? statusOrder[b.status] : 4;
     return orderA - orderB;
@@ -212,7 +253,7 @@ export default function RecordsPage() {
 
   const handleDeleteCompletedFiles = async (filesToDelete: string[]) => {
     try {
-      const recordsToDelete = records.filter(r => filesToDelete.includes(r.sourceFile));
+      const recordsToDelete = records.filter(r => r.sourceFile && filesToDelete.includes(normalizeSourceName(r.sourceFile)));
       const deletedImports = JSON.parse(localStorage.getItem('lifelead_deleted_imports') || '[]');
       
       recordsToDelete.forEach(r => {
@@ -280,6 +321,15 @@ export default function RecordsPage() {
               onChange={handleFileUpload}
               className="hidden"
             />
+            <button 
+              onClick={() => setIsScanModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-[#ffb347] hover:bg-[#ffa726] text-[#133020] rounded-xl text-sm font-bold shadow-lg shadow-[#ffb347]/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              Scan for Clients
+            </button>
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={isImporting}
@@ -362,26 +412,28 @@ export default function RecordsPage() {
             ))}
           </div>
 
-          {/* Search Input and File dropdown */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 flex-1 lg:max-w-xl">
-            <div className="relative w-full flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
+          {/* File dropdown and Filter */}
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 flex-1 lg:max-w-4xl">
+            <div className="relative w-full sm:w-64 shrink-0">
               <input
                 type="text"
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search records keyword..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#14120e] border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] transition-all placeholder-gray-400"
+                className="w-full px-4 py-2.5 bg-white dark:bg-[#14120e] border border-gray-200/80 dark:border-white/10 rounded-xl text-sm font-medium text-[#133020] dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241]/20 shadow-sm transition-all"
+              />
+            </div>
+            <div className="relative w-full sm:w-48 shrink-0">
+              <CustomSelect
+                options={["All Contact Deets", "Complete contact info", "Email only", "Telephone only", "Phone only"]}
+                value={contactDeetsFilter}
+                onChange={setContactDeetsFilter}
               />
             </div>
 
-            <div className="relative w-full sm:w-48">
+            <div className="relative w-full sm:w-48 shrink-0">
               <CustomSelect
-                options={["All Files", ...availableFiles]}
+                options={fileOptions}
                 value={selectedFile}
                 onChange={setSelectedFile}
               />
@@ -423,7 +475,7 @@ export default function RecordsPage() {
           </div>
         </div>
 
-        {/* Data Table with 50 items per page pagination */}
+        {/* Data Table with 10 items per page pagination */}
         <RecordsTable records={sortedRecords} />
 
       {isModalOpen && (
@@ -431,6 +483,15 @@ export default function RecordsPage() {
           completedFiles={completedFiles}
           onClose={() => setIsModalOpen(false)}
           onDeleteFiles={handleDeleteCompletedFiles}
+        />
+      )}
+
+      {isScanModalOpen && (
+        <ScanClientsModal
+          onClose={() => setIsScanModalOpen(false)}
+          onScanComplete={fetchRecords}
+          importCategory={selectedImportCategory}
+          existingCompanyNames={records.map(r => r.companyName.toLowerCase())}
         />
       )}
     </>

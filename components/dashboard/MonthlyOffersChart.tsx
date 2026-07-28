@@ -3,20 +3,20 @@ import React, { useState } from "react";
 interface MonthlyOffersChartProps {
   selectedFile: string;
   hasData?: boolean;
-  monthlyAccepted: number[];
-  monthlyRejected: number[];
+  monthlyHotLeads: number[];
+  monthlyColdLeads: number[];
 }
 
-export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyAccepted, monthlyRejected }: MonthlyOffersChartProps) {
-  const [tooltipData, setTooltipData] = useState<{ month: string; accepted: number; rejected: number; x: number; y: number } | null>(null);
+export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyHotLeads, monthlyColdLeads }: MonthlyOffersChartProps) {
+  const [tooltipData, setTooltipData] = useState<{ month: string; hotLeads: number; coldLeads: number; x: number; y: number } | null>(null);
 
   const getPoints = (dataArray: number[]) => {
     if (!hasData || !dataArray || dataArray.length !== 12) return Array(12).fill(0);
     return dataArray;
   };
 
-  const acceptedData = getPoints(monthlyAccepted);
-  const rejectedData = getPoints(monthlyRejected);
+  const hotLeadsData = getPoints(monthlyHotLeads);
+  const coldLeadsData = getPoints(monthlyColdLeads);
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   
   // SVG viewBox size
@@ -28,7 +28,7 @@ export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyAccept
   const innerWidth = svgWidth - paddingX * 2;
   const innerHeight = svgHeight - paddingY * 2;
   
-  const maxDataVal = Math.max(...acceptedData, ...rejectedData, 10);
+  const maxDataVal = Math.max(...hotLeadsData, ...coldLeadsData, 10);
   const maxVal = Math.ceil(maxDataVal / 10) * 10;
 
   // Helper to calculate X and Y coordinates
@@ -62,7 +62,7 @@ export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyAccept
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-[13px] font-black text-gray-500 tracking-widest uppercase mb-1">
-            Offers Status (Accepted vs Rejected)
+            Hot Leads vs Cold Leads
           </h2>
           <p className="text-sm font-bold text-gray-400">
             Tracking: <span className="text-[#046241] dark:text-[#ffb347]">{selectedFile}</span>
@@ -71,11 +71,11 @@ export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyAccept
         <div className="flex gap-4 items-center">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-[#046241]"></span>
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Accepted</span>
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Hot Leads</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-[#ffb347]"></span>
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Rejected</span>
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cold Leads</span>
           </div>
         </div>
       </div>
@@ -118,28 +118,28 @@ export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyAccept
             </g>
           ))}
 
-          {/* Rejected Area & Line */}
+          {/* Cold Leads Area & Line */}
           <path
-            d={generateArea(rejectedData)}
+            d={generateArea(coldLeadsData)}
             fill="url(#rejectedGradient)"
             className="transition-all"
           />
           <path
-            d={generatePath(rejectedData)}
+            d={generatePath(coldLeadsData)}
             fill="none"
             stroke="#ffb347"
             strokeWidth={3}
             className="drop-shadow-sm"
           />
 
-          {/* Accepted Area & Line */}
+          {/* Hot Leads Area & Line */}
           <path
-            d={generateArea(acceptedData)}
+            d={generateArea(hotLeadsData)}
             fill="url(#acceptedGradient)"
             className="transition-all"
           />
           <path
-            d={generatePath(acceptedData)}
+            d={generatePath(hotLeadsData)}
             fill="none"
             stroke="#046241"
             strokeWidth={3}
@@ -157,10 +157,10 @@ export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyAccept
               fill="transparent"
               className="cursor-pointer"
               onMouseEnter={(e) => {
-                setTooltipData({ month, accepted: acceptedData[i], rejected: rejectedData[i], x: e.clientX, y: e.clientY });
+                setTooltipData({ month, hotLeads: hotLeadsData[i], coldLeads: coldLeadsData[i], x: e.clientX, y: e.clientY });
               }}
               onMouseMove={(e) => {
-                setTooltipData({ month, accepted: acceptedData[i], rejected: rejectedData[i], x: e.clientX, y: e.clientY });
+                setTooltipData({ month, hotLeads: hotLeadsData[i], coldLeads: coldLeadsData[i], x: e.clientX, y: e.clientY });
               }}
               onMouseLeave={() => {
                 setTooltipData(null);
@@ -195,8 +195,8 @@ export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyAccept
                 className="dark:stroke-gray-700 pointer-events-none" 
               />
               {/* Points */}
-              <circle cx={getX(months.indexOf(tooltipData.month))} cy={getY(tooltipData.rejected)} r={6} fill="#ffb347" stroke="#fff" strokeWidth={2} className="dark:stroke-[#181512] pointer-events-none" />
-              <circle cx={getX(months.indexOf(tooltipData.month))} cy={getY(tooltipData.accepted)} r={6} fill="#046241" stroke="#fff" strokeWidth={2} className="dark:fill-[#4ade80] dark:stroke-[#181512] pointer-events-none" />
+              <circle cx={getX(months.indexOf(tooltipData.month))} cy={getY(tooltipData.coldLeads)} r={6} fill="#ffb347" stroke="#fff" strokeWidth={2} className="dark:stroke-[#181512] pointer-events-none" />
+              <circle cx={getX(months.indexOf(tooltipData.month))} cy={getY(tooltipData.hotLeads)} r={6} fill="#046241" stroke="#fff" strokeWidth={2} className="dark:fill-[#4ade80] dark:stroke-[#181512] pointer-events-none" />
             </>
           )}
 
@@ -214,12 +214,12 @@ export function MonthlyOffersChart({ selectedFile, hasData = true, monthlyAccept
         >
           <div className="text-xs font-bold text-gray-400 mb-2 tracking-wider uppercase border-b border-gray-100 dark:border-white/5 pb-2">{tooltipData.month}</div>
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs font-black text-[#046241] dark:text-[#4ade80]">Accepted</span>
-            <span className="text-sm font-black text-[#133020] dark:text-white">{tooltipData.accepted}</span>
+            <span className="text-xs font-black text-[#046241] dark:text-[#4ade80]">Hot Leads</span>
+            <span className="text-sm font-black text-[#133020] dark:text-white">{tooltipData.hotLeads}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-xs font-black text-[#ffb347]">Rejected</span>
-            <span className="text-sm font-black text-[#133020] dark:text-white">{tooltipData.rejected}</span>
+            <span className="text-xs font-black text-[#ffb347]">Cold Leads</span>
+            <span className="text-sm font-black text-[#133020] dark:text-white">{tooltipData.coldLeads}</span>
           </div>
         </div>
       )}

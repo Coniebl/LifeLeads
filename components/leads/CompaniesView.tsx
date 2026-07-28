@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { UserPlusIcon } from "@heroicons/react/24/outline";
+import { formatLocationWithCountry, normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 import { CompanyCard, type CompanyData } from "./CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
+import { CountrySelectDropdown, type CountryOption } from "./CountrySelectDropdown";
 import { supabase } from "../../lib/supabase/client";
 
 export function CompaniesView({ companies, setCompanies }: { companies: CompanyData[], setCompanies: React.Dispatch<React.SetStateAction<CompanyData[]>> }) {
@@ -12,7 +15,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [selectedIndustry, setSelectedIndustry] = useState("All Industries");
   const [selectedCountry, setSelectedCountry] = useState("All Countries");
-  const [selectedSource, setSelectedSource] = useState("All Records");
+  const [selectedSource, setSelectedSource] = useState("All Files");
+  const [contactDeetsFilter, setContactDeetsFilter] = useState("All Contact Deets");
   
   // Subcategories: Companies vs Filipino Community Organizations
   const activeSubcategory = searchParams.get("category") || "Companies";
@@ -23,7 +27,6 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   const [isComposingEmail, setIsComposingEmail] = useState(false);
   const [hasSentEmail, setHasSentEmail] = useState(false);
   const [emailBody, setEmailBody] = useState("");
-  const [showEmailProviders, setShowEmailProviders] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -38,34 +41,105 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
       setIsComposingEmail(false);
       setHasSentEmail(false);
       setEmailBody("");
-      setShowEmailProviders(false);
       setSelectedTemplate(null);
     }
   }, [selectedCompany?.name]);
 
-  const allIndustries = ["All Industries", ...Array.from(new Set(companies.flatMap(c => c.industries)))];
-  const allCountries = ["All Countries", ...Array.from(new Set(companies.map(c => c.country)))];
-  const allSources = ["All Records", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean)))] as string[];
-
-  // Filter companies that belong to Leads (`!status || status === "Not Active"`) and match the active subcategory
-  const filteredCompanies = companies.filter(c => {
-    // Check if item has already been processed out of Leads
-    if (c.status === "Pending" || c.status === "Accepted" || c.status === "Rejected") {
+  // Base list of leads matching the active category before text/dropdown filters
+  const baseCompaniesForCategory = companies.filter(c => {
+    // Only show items that are strictly Not Active (unprocessed)
+    if (c.status !== "Not Active") {
       return false;
     }
-
     // Classify category: use explicit category or infer from name
     const itemCategory = c.category || "Companies";
+    return itemCategory === activeSubcategory;
+  });
 
-    if (itemCategory !== activeSubcategory) return false;
+  // 1. Compute dynamic filters based on current selection
+  const companiesMatchingCountryAndSource = baseCompaniesForCategory.filter(c => {
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const parentMatches = getCountryForLocation(normCountry) === selectedCountry;
+    const matchesCountry = selectedCountry === "All Countries" || parentMatches || normCountry === selectedCountry;
+    const matchesSource = selectedSource === "All Files" || (c.source || "Unknown") === selectedSource;
+    return matchesCountry && matchesSource;
+  });
 
+  const companiesMatchingCountryAndIndustry = baseCompaniesForCategory.filter(c => {
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const parentMatches = getCountryForLocation(normCountry) === selectedCountry;
+    const matchesCountry = selectedCountry === "All Countries" || parentMatches || normCountry === selectedCountry;
+    const matchesIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
+    return matchesCountry && matchesIndustry;
+  });
+
+  const allIndustries = ["All Industries", ...Array.from(new Set(companiesMatchingCountryAndSource.flatMap(c => c.industries)))].sort();
+  const allSources = ["All Files", ...Array.from(new Set(companiesMatchingCountryAndIndustry.map(c => c.source).filter(Boolean)))].sort();
+
+  // Compute hierarchical countries
+  const hierarchicalCountries: CountryOption[] = [{ label: "All Countries", value: "All Countries" }];
+  const rawCountries = Array.from(new Set(baseCompaniesForCategory.map(c => c.country ? normalizeLocationName(c.country) : "").filter(Boolean))).sort();
+  const groupedCountries: Record<string, string[]> = {};
+  
+  rawCountries.forEach(c => {
+    const parent = getCountryForLocation(c) || c;
+    if (!groupedCountries[parent]) groupedCountries[parent] = [];
+    const lower = c.toLowerCase();
+    if (lower !== parent.toLowerCase() && lower !== "united states" && lower !== "us") {
+      groupedCountries[parent].push(c);
+    }
+  });
+
+  const sortedParents = Object.keys(groupedCountries).sort((a, b) => {
+    const aLower = a.toLowerCase();
+    const bLower = b.toLowerCase();
+    if (aLower === "usa" || aLower === "united states") return -1;
+    if (bLower === "usa" || bLower === "united states") return 1;
+    return a.localeCompare(b);
+  });
+
+  sortedParents.forEach(parentCountry => {
+    const children = groupedCountries[parentCountry].sort();
+    if (children.length > 0) {
+      hierarchicalCountries.push({
+        label: parentCountry,
+        value: parentCountry,
+        children: children.map(child => ({ label: child, value: child }))
+      });
+    } else {
+      hierarchicalCountries.push({ label: parentCountry, value: parentCountry });
+    }
+  });
+
+  // Apply search and dropdown filters
+  const filteredCompanies = baseCompaniesForCategory.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           c.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (c.contactPerson && c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
-    const matchesCountry = selectedCountry === "All Countries" || c.country === selectedCountry;
-    const matchesSource = selectedSource === "All Records" || (c.source || "Unknown") === selectedSource;
-    return matchesSearch && matchesIndustry && matchesCountry && matchesSource;
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const parentMatches = getCountryForLocation(normCountry) === selectedCountry;
+    const matchesCountry = selectedCountry === "All Countries" || parentMatches || normCountry === selectedCountry;
+    const matchesSource = selectedSource === "All Files" || (c.source || "Unknown") === selectedSource;
+
+    let matchesContact = true;
+    if (contactDeetsFilter !== "All Contact Deets") {
+      const hasEmail = !!c.email && c.email.toLowerCase() !== "n/a";
+      const hasPhone = !!c.contactMobile && c.contactMobile.toLowerCase() !== "n/a";
+      const hasTelephone = !!c.contactTelephone && c.contactTelephone.toLowerCase() !== "n/a";
+
+      if (contactDeetsFilter === "Complete contact info") {
+        matchesContact = hasEmail && hasPhone && hasTelephone;
+      } else if (contactDeetsFilter === "Email only") {
+        matchesContact = hasEmail && !hasPhone && !hasTelephone;
+      } else if (contactDeetsFilter === "Telephone only") {
+        matchesContact = !hasEmail && !hasPhone && hasTelephone;
+      } else if (contactDeetsFilter === "Phone only") {
+        matchesContact = !hasEmail && hasPhone && !hasTelephone;
+      }
+    }
+
+    return matchesSearch && matchesIndustry && matchesCountry && matchesSource && matchesContact;
   });
 
   // 20 cards per page (5 columns x 4 rows)
@@ -75,7 +149,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeSubcategory, searchTerm, selectedIndustry, selectedCountry, selectedSource]);
+  }, [activeSubcategory, searchTerm, selectedIndustry, selectedCountry, selectedSource, contactDeetsFilter]);
 
   // Handle generating email templates
   const handleTemplateClick = (templateType: "Introduction" | "Partnerships" | "Follow Ups") => {
@@ -102,7 +176,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     showToast("Extracted & copied email text to clipboard!");
   };
 
-  const handleProviderSend = (provider: "gmail" | "outlook" | "yahoo" | "default") => {
+  const handleProviderSend = async (provider: "gmail" | "outlook" | "yahoo" | "default") => {
     setHasSentEmail(true);
 
     const recipient = selectedCompany?.email || "";
@@ -134,7 +208,21 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     }
 
     setIsComposingEmail(false);
-    setShowEmailProviders(false);
+
+    // Automatically process lead to Pending after sending email
+    if (selectedCompany && selectedCompany.status !== "Pending") {
+      try {
+        await supabase.from('company_contacts').update({ 
+          status: 'Pending',
+          status_updated_at: new Date().toISOString()
+        }).eq('id', selectedCompany.id);
+        
+        setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? { ...c, status: "Pending" } : c));
+        showToast(`${selectedCompany.name} moved to Pending status!`);
+      } catch (err) {
+        console.error("Failed to update status to Pending", err);
+      }
+    }
   };
 
   const handleManualContact = () => {
@@ -208,8 +296,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
         
         {/* Search Bar */}
         <div className="relative flex-1 w-full min-w-[200px]">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
           </div>
@@ -218,27 +306,42 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
             placeholder="Search leads by company, country, contact person..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-full pl-12 pr-4 py-3 bg-transparent text-sm font-semibold text-[#133020] dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] rounded-xl transition-all"
+            className="w-full h-full pl-9 pr-3 py-2.5 bg-transparent text-xs font-semibold text-[#133020] dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] rounded-xl transition-all"
           />
         </div>
 
         {/* Filters Group */}
-        <div className="flex flex-wrap items-center justify-end gap-3 xl:pl-4 xl:border-l border-gray-100 dark:border-white/10 pb-1 xl:pb-0">
-          <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hidden xl:block flex-shrink-0">Filters</span>
-          
+        <div className="flex flex-wrap items-center justify-end gap-2 xl:pl-4 xl:border-l border-gray-100 dark:border-white/10 pb-1 xl:pb-0">
+          <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hidden xl:block flex-shrink-0">Filters</span>
+
+          <SelectDropdown
+            value={contactDeetsFilter}
+            onChange={setContactDeetsFilter}
+            options={["All Contact Deets", "Complete contact info", "Email only", "Telephone only", "Phone only"].map(s => ({ label: s, value: s }))}
+            icon={
+              <svg className="w-3.5 h-3.5 text-[#046241] dark:text-[#ffb347] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            }
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+          />
+
           <SelectDropdown
             value={selectedSource}
             onChange={setSelectedSource}
             options={allSources.map(s => ({ label: s, value: s }))}
             icon={
-              <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-[#046241] dark:text-[#ffb347] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
             }
-            className="flex items-center justify-between gap-2 px-4 py-3 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-[#046241] dark:text-[#ffb347]"
-            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
-            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-bold text-[#046241] dark:text-[#ffb347] max-w-[200px]"
+            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
 
           <SelectDropdown
@@ -246,29 +349,29 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
             onChange={setSelectedIndustry}
             options={allIndustries.map(i => ({ label: i, value: i }))}
             icon={
-              <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
               </svg>
             }
-            className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-semibold text-gray-700 dark:text-gray-200"
-            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
-            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
           
-          <SelectDropdown
+          <CountrySelectDropdown
             value={selectedCountry}
             onChange={setSelectedCountry}
-            options={allCountries.map(c => ({ label: c, value: c }))}
+            options={hierarchicalCountries}
             icon={
-              <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
               </svg>
             }
-            className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-semibold text-gray-700 dark:text-gray-200"
-            dropdownClassName="absolute top-full right-0 mt-2 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
-            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            dropdownClassName="absolute top-full right-0 mt-2 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
         </div>
       </div>
@@ -441,79 +544,34 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
                 {/* Bottom Actions: Extract Text on Left, Send on Right */}
                 <div className="flex flex-col gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
-                  {showEmailProviders ? (
-                    <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
-                        Select Email Platform
-                      </span>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <button
-                          onClick={() => handleProviderSend("gmail")}
-                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 text-xs font-bold transition-colors"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 8.414l8.073-4.921c1.618-1.214 3.927-.059 3.927 1.964Z"/></svg>
-                          Gmail
-                        </button>
-                        <button
-                          onClick={() => handleProviderSend("outlook")}
-                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 text-xs font-bold transition-colors"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M1.38 6.55L14 2.76v18.42L1.38 17.45V6.55zM15 4.3v15.4h7.62V4.3H15zm2.86 10.93c-1.16 0-2.04-.9-2.04-2.12 0-1.23.88-2.13 2.04-2.13 1.15 0 2.03.9 2.03 2.13 0 1.22-.88 2.12-2.03 2.12zm0-1c.54 0 .9-.45.9-1.12 0-.66-.36-1.12-.9-1.12-.53 0-.9.46-.9 1.12 0 .67.37 1.12.9 1.12z" /></svg>
-                          Outlook
-                        </button>
-                        <button
-                          onClick={() => handleProviderSend("yahoo")}
-                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:hover:bg-purple-500/20 text-xs font-bold transition-colors"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22.46 5.56L13.88 18.2v5.8h-3.76v-5.8L1.54 5.56h4.15l6.32 10.3 6.32-10.3h4.13z"/></svg>
-                          Yahoo
-                        </button>
-                        <button
-                          onClick={() => handleProviderSend("default")}
-                          className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20 text-xs font-bold transition-colors"
-                          title="Apple Mail, Teams, or System Default"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                          Default App
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => setShowEmailProviders(false)}
-                        className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-center mt-1 transition-colors uppercase tracking-wider"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-3">
-                      <button
-                        onClick={handleCopyExtract}
-                        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-xs font-bold text-gray-700 dark:text-gray-200 transition-all"
-                        title="Extract and copy text to clipboard"
-                      >
-                        <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-                        </svg>
-                        Extract Text
-                      </button>
-  
-                      <button
-                        onClick={() => {
-                          if (!emailBody.trim()) {
-                            showToast("Please select a template or write an email first.");
-                            return;
-                          }
-                          setShowEmailProviders(true);
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#046241] to-[#ffb347] text-white font-black text-xs shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all"
-                      >
-                        Send Mail
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      onClick={handleCopyExtract}
+                      className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-xs font-bold text-gray-700 dark:text-gray-200 transition-all"
+                      title="Extract and copy text to clipboard"
+                    >
+                      <svg className="w-4 h-4 text-[#046241] dark:text-[#ffb347]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                      </svg>
+                      Extract Text
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (!emailBody.trim()) {
+                          showToast("Please select a template or write an email first.");
+                          return;
+                        }
+                        handleProviderSend("outlook");
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#046241] to-[#ffb347] text-white font-black text-xs shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all"
+                    >
+                      Send Mail
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
