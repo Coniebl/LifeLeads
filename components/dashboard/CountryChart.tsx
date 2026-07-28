@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import type { CountryData } from "../../lib/hooks/useDashboardData";
 
 interface CountryChartProps {
@@ -8,6 +8,8 @@ interface CountryChartProps {
 export function CountryChart({ countriesData }: CountryChartProps) {
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   const [tooltipData, setTooltipData] = useState<{ name: string; item: CountryData; x: number; y: number } | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const countries = Object.entries(countriesData).sort((a, b) => b[1].count - a[1].count);
 
@@ -58,13 +60,30 @@ export function CountryChart({ countriesData }: CountryChartProps) {
                 <div
                   key={name}
                   className="relative flex flex-col items-center flex-1 min-w-[20px] max-w-[64px] group cursor-pointer h-full justify-end"
-                  onMouseEnter={() => setHoveredCountry(name)}
+                  onMouseEnter={() => {
+                    if (!selectedCountry) setHoveredCountry(name);
+                  }}
                   onMouseMove={(e) => {
-                    setTooltipData({ name, item, x: e.clientX, y: e.clientY });
+                    if (!selectedCountry) {
+                      setTooltipData({ name, item, x: e.clientX, y: e.clientY });
+                    }
                   }}
                   onMouseLeave={() => {
-                    setHoveredCountry(null);
-                    setTooltipData(null);
+                    if (!selectedCountry) {
+                      setHoveredCountry(null);
+                      setTooltipData(null);
+                    }
+                  }}
+                  onClick={(e) => {
+                    if (selectedCountry === name) {
+                      setSelectedCountry(null);
+                      setHoveredCountry(null);
+                      setTooltipData(null);
+                    } else {
+                      setSelectedCountry(name);
+                      setHoveredCountry(name);
+                      setTooltipData({ name, item, x: e.clientX, y: e.clientY });
+                    }
                   }}
                 >
                   {/* Top Label (Count) */}
@@ -101,16 +120,30 @@ export function CountryChart({ countriesData }: CountryChartProps) {
       {/* Floating Cursor Tooltip */}
       {tooltipData && (
         <div 
-          className="fixed z-[999] bg-white dark:bg-[#1A1612] border border-gray-100 dark:border-white/5 shadow-2xl rounded-2xl p-4 w-56 text-left pointer-events-none transition-opacity duration-150"
+          className={`fixed z-[999] bg-white dark:bg-[#1A1612] border border-gray-100 dark:border-white/5 shadow-2xl rounded-2xl p-4 w-56 text-left transition-opacity duration-150 ${selectedCountry ? 'pointer-events-auto' : 'pointer-events-none'}`}
           style={{ 
             left: Math.min(tooltipData.x + 15, window.innerWidth - 240), 
             top: Math.min(tooltipData.y + 15, window.innerHeight - 200) 
           }}
         >
-          <h4 className="text-xs font-extrabold text-[#133020] dark:text-[#ffb347] uppercase tracking-wider mb-2 border-b border-gray-100 dark:border-white/5 pb-1">
-            {tooltipData.name} ({tooltipData.item.count})
-          </h4>
-          <div className="flex flex-col gap-1.5 text-xs text-gray-500 dark:text-gray-300 max-h-48 overflow-y-auto custom-scrollbar">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1 mb-2">
+            <h4 className="text-xs font-extrabold text-[#133020] dark:text-[#ffb347] uppercase tracking-wider">
+              {tooltipData.name} ({tooltipData.item.count})
+            </h4>
+            {selectedCountry && (
+              <button 
+                onClick={() => {
+                  setSelectedCountry(null);
+                  setHoveredCountry(null);
+                  setTooltipData(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5 text-xs text-gray-500 dark:text-gray-300 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             {tooltipData.item.companies.length > 0 ? (
               tooltipData.item.companies.map((companyName, idx) => (
                 <div key={idx} className="flex items-center gap-2 font-medium">

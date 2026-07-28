@@ -53,10 +53,15 @@ export async function GET(request: Request) {
             }
         });
 
-        // Fetch emails from the Inbox that are unread
+        // Calculate lookback date (e.g., 7 days ago) to avoid Graph API throttling on large mailboxes
+        const lookbackDate = new Date();
+        lookbackDate.setDate(lookbackDate.getDate() - 7);
+        const dateString = lookbackDate.toISOString();
+
+        // Fetch emails from the Inbox that are unread and recent
         const response = await graphClient
             .api(`/users/${process.env.OUTLOOK_EMAIL_ADDRESS}/mailFolders/inbox/messages`)
-            .filter('isRead eq false')
+            .filter(`isRead eq false and receivedDateTime ge ${dateString}`)
             .select('sender,subject,bodyPreview,receivedDateTime')
             .top(50)
             .get();

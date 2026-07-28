@@ -4,6 +4,7 @@ import { type CompanyData } from "../leads/CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 
 export function StatusView({ 
   companies, 
@@ -29,55 +30,54 @@ export function StatusView({
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Poll Outlook integration API for new replies every 1 minute
-  useEffect(() => {
-    const checkReplies = async () => {
-      try {
-        setIsSyncing(true);
-        const res = await fetch('/api/outlook/check-replies');
-        if (!res.ok) {
-          throw new Error(`API error: ${res.status}`);
-        }
-        const data = await res.json();
-        if (data.success && data.message.includes('Updated') && !data.message.includes('0 leads')) {
-          window.location.reload(); 
-        }
-      } catch (err) {
-        console.error('Failed to sync outlook replies:', err);
-      } finally {
-        setIsSyncing(false);
-      }
-    };
-
-    checkReplies();
-    const interval = setInterval(checkReplies, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Polling removed as per user request to handle sync manually in Pipeline tab
 
   // 1. Derive dropdown filter options
   const allClassifications = ["All Classifications", "Companies", "Filipino Community Organizations"];
-  const allSources = ["All Files", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean)))];
+  const allSources = ["All Files", ...Array.from(new Set(companies.map(c => c.source).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b)))];
   const allIndustries = ["All Industries", ...Array.from(new Set(companies.flatMap(c => c.industries)))];
-  const allCountries = ["All Countries", ...Array.from(new Set(companies.map(c => c.country)))];
+  
+  const rawCountries = Array.from(new Set(companies.map(c => c.country ? normalizeLocationName(c.country) : "").filter(Boolean))).sort();
+  const usaCountries = rawCountries.filter(c => getCountryForLocation(c) === "USA");
+  const otherCountries = rawCountries.filter(c => getCountryForLocation(c) !== "USA");
+
+  const allCountries = ["All Countries"];
+  if (usaCountries.length > 0) {
+    allCountries.push("USA");
+    usaCountries.forEach(c => {
+      const lower = c.toLowerCase();
+      if (lower !== "usa" && lower !== "united states" && lower !== "us") {
+        allCountries.push(`  ↳ ${c}`);
+      }
+    });
+  }
+  otherCountries.forEach(c => allCountries.push(c));
 
   // 2. Apply dropdown filters
   const filteredCompanies = companies.filter(c => {
     const matchClassification = selectedClassification === "All Classifications" || (c.category || "Companies") === selectedClassification;
-    const matchSource = selectedSource === "All Files" || c.source === selectedSource;
+    const matchSource = selectedSource === "All Files" || (c.source || "Unknown") === selectedSource;
     const matchIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
-    const matchCountry = selectedCountry === "All Countries" || c.country === selectedCountry;
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const matchCountry = selectedCountry === "All Countries" || 
+           (selectedCountry === "USA" && getCountryForLocation(normCountry) === "USA") ||
+           normCountry === selectedCountry.replace('↳', '').trim();
     return matchClassification && matchSource && matchIndustry && matchCountry;
+  }).sort((a, b) => {
+    const order: Record<string, number> = { "Hot Lead": 1, "Cold Lead": 2 };
+    const aOrder = order[a.status || ""] || 99;
+    const bOrder = order[b.status || ""] || 99;
+    return aOrder - bOrder;
   });
 
   // 3. Derived Stats
   const totalCount = filteredCompanies.length;
   const pendingCount = filteredCompanies.filter(c => c.status === "Pending").length;
-  const respondedCount = filteredCompanies.filter(c => c.status === "Responded").length;
+  const respondedCount = filteredCompanies.filter(c => c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead").length;
   const inactiveCount = filteredCompanies.filter(c => !c.status || c.status === "Not Active").length;
 
-  // 4. Filter by active Status Pill (Pending, Responded, Not Active)
   const tabulatedCompanies = filteredCompanies.filter(c => {
-    if (statusTab === "Responded") return c.status === "Responded";
+    if (statusTab === "Responded") return c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead";
     if (statusTab === "Not Active") return !c.status || c.status === "Not Active";
     return c.status === "Pending";
   });
@@ -93,6 +93,8 @@ export function StatusView({
       case "Rejected": return "text-red-600 bg-red-100 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800";
       case "Pending": return "text-[#b45309] bg-[#ffb347]/15 border-[#ffb347]/30 dark:text-[#ffb347] dark:bg-[#ffb347]/10";
       case "Responded": return "text-[#0d9488] bg-[#0d9488]/15 border-[#0d9488]/30 dark:text-[#2dd4bf] dark:bg-[#0d9488]/10";
+      case "Hot Lead": return "text-orange-600 bg-orange-100 border-orange-200 dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800";
+      case "Cold Lead": return "text-blue-600 bg-blue-100 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800";
       default: return "text-gray-600 bg-gray-100 border-gray-200 dark:text-gray-400 dark:bg-gray-800 dark:border-gray-700";
     }
   };
@@ -103,6 +105,8 @@ export function StatusView({
       case "Rejected": return "bg-red-600";
       case "Pending": return "bg-[#ffb347]";
       case "Responded": return "bg-[#0d9488]";
+      case "Hot Lead": return "bg-orange-600";
+      case "Cold Lead": return "bg-blue-600";
       default: return "bg-gray-400 dark:bg-gray-500";
     }
   };
@@ -113,6 +117,7 @@ export function StatusView({
     const generateExportData = (companies: typeof filteredCompanies) => {
       return companies.map(c => ({
         "Company Name": c.name,
+        "Classification": c.category || "Companies",
         "Contact Person": c.contactPerson || "Not Provided",
         "Designation": c.designation || "Not Provided",
         "Contact Mobile": c.contactMobile || "Not Provided",
@@ -120,9 +125,9 @@ export function StatusView({
         "Email": c.email || "Not Provided",
         "Industry": c.industries.join(", "),
         "Country": c.country,
-        "Status": c.status || "Not Active",
+        "Pipeline Category / Status": c.status || "Not Active",
         "Source File": c.source || "Unknown",
-        "Joined/Updated": c.updatedAt || "N/A",
+        "Updated": c.updatedAt || "Today",
         "LinkedIn": c.linkedin || "",
         "Website": c.website || ""
       }));
@@ -131,18 +136,16 @@ export function StatusView({
     const allData = generateExportData(filteredCompanies);
     const notActiveData = generateExportData(filteredCompanies.filter(c => !c.status || c.status === "Not Active"));
     const pendingData = generateExportData(filteredCompanies.filter(c => c.status === "Pending"));
-    const respondedData = generateExportData(filteredCompanies.filter(c => c.status === "Responded"));
-    const acceptedData = generateExportData(filteredCompanies.filter(c => c.status === "Accepted"));
-    const rejectedData = generateExportData(filteredCompanies.filter(c => c.status === "Rejected"));
+    const respondedData = generateExportData(filteredCompanies.filter(c => c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead"));
 
     const addSheet = (data: any[], name: string, tabColor: string) => {
       const ws = wb.addWorksheet(name);
       ws.properties.tabColor = { argb: tabColor };
       
       const displayData = data.length > 0 ? data : [{
-        "Company Name": "", "Contact Person": "", "Designation": "", 
+        "Company Name": "", "Classification": "", "Contact Person": "", "Designation": "", 
         "Contact Mobile": "", "Contact Telephone": "", "Email": "", "Industry": "", "Country": "", 
-        "Status": "", "Source File": "", "Joined/Updated": "", 
+        "Pipeline Category / Status": "", "Source File": "", "Updated": "", 
         "LinkedIn": "", "Website": ""
       }];
       
@@ -151,6 +154,24 @@ export function StatusView({
       
       if (data.length > 0) {
         ws.addRows(data);
+        
+        // We will apply filter to the whole row because exceljs does not support selective hidden buttons for autofilter
+        ws.autoFilter = `A1:${String.fromCharCode(64 + headers.length)}1`;
+
+        // Add color formatting for Pipeline Category
+        const statusColIndex = headers.indexOf("Pipeline Category / Status") + 1;
+        if (statusColIndex > 0) {
+          ws.eachRow((row, rowNumber) => {
+            if (rowNumber > 1) { // Skip header
+              const cell = row.getCell(statusColIndex);
+              if (cell.value === 'Hot Lead') {
+                cell.font = { color: { argb: 'FFDC2626' }, bold: true }; // Red
+              } else if (cell.value === 'Cold Lead') {
+                cell.font = { color: { argb: 'FF2563EB' }, bold: true }; // Blue
+              }
+            }
+          });
+        }
       } else {
         // Add an empty row just to get headers formatted properly
         ws.addRow(headers.reduce((acc, h) => ({...acc, [h]: ""}), {}));
@@ -179,8 +200,6 @@ export function StatusView({
     addSheet(notActiveData, "Not Active", "FF9CA3AF"); // Gray
     addSheet(pendingData, "Pending", "FFF59E0B"); // Orange
     addSheet(respondedData, "Responded", "FF0D9488"); // Blue Green
-    addSheet(acceptedData, "Accepted", "FF10B981"); // Bright Green
-    addSheet(rejectedData, "Rejected", "FFEF4444"); // Red
 
     const safeTitle = selectedClassification.replace(/[\/\?\*\[\]:]/g, "_").substring(0, 31);
     const buffer = await wb.xlsx.writeBuffer();
@@ -200,7 +219,7 @@ export function StatusView({
       console.error("Failed to log export", e);
     }
     
-    showToast(`Exported ${filteredCompanies.length} records across 6 sheets!`);
+    showToast(`Exported ${filteredCompanies.length} records across 4 sheets!`);
   };
 
   const handleUpdateStatus = async (newStatus: "Accepted" | "Rejected" | "Responded") => {
@@ -297,7 +316,7 @@ export function StatusView({
         <div className="flex items-center flex-wrap gap-2">
           {(["Not Active", "Pending", "Responded"] as const).map((tab) => {
             const count = filteredCompanies.filter(c => {
-              if (tab === "Responded") return c.status === "Responded";
+              if (tab === "Responded") return c.status === "Responded" || c.status === "Hot Lead" || c.status === "Cold Lead";
               if (tab === "Not Active") return !c.status || c.status === "Not Active";
               return c.status === "Pending";
             }).length;
@@ -330,23 +349,23 @@ export function StatusView({
             value={selectedSource}
             onChange={setSelectedSource}
             options={allSources.map(s => ({ label: String(s), value: String(s) }))}
-            className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-[180px] shadow-xs"
-            dropdownClassName="absolute top-full right-0 mt-2 w-[220px] bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors truncate"
-            activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347] truncate"
+            className="flex items-center justify-between gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-[#046241]/20 dark:border-white/10 hover:border-[#046241]/50 dark:hover:border-white/30 transition-all bg-white dark:bg-[#1c1915] text-[#133020] dark:text-gray-200 min-w-45 max-w-62.5 shadow-xs"
+            dropdownClassName="absolute top-full right-0 mt-2 w-[280px] bg-white dark:bg-[#1c1915] rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
+            optionClassName="w-full text-left px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors whitespace-normal break-words"
+            activeOptionClassName="w-full text-left px-4 py-2 text-xs font-bold bg-[#046241]/5 dark:bg-[#ffb347]/10 text-[#046241] dark:text-[#ffb347] whitespace-normal break-words"
           />
         </div>
       </div>
 
       {/* Tabulated Display */}
-      <div className="flex-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden flex flex-col min-h-[360px]">
+      <div className="flex-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden flex flex-col min-h-90">
         {/* Table Header */}
-        <div className="grid grid-cols-[40px_auto_2.5fr_1fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-6 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest overflow-visible">
+        <div className="grid grid-cols-[40px_auto_2.5fr_1fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-4 py-4 bg-gray-50/70 dark:bg-white/2 border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest overflow-visible">
           <div>No.</div>
           <div className="w-10"></div>
-          <div>Name / Organization</div>
-          <div className="flex items-center gap-1 relative">
-            Classification
+          <div className="min-w-0 truncate">Name / Organization</div>
+          <div className="flex items-center gap-1 relative min-w-0">
+            <span className="truncate">Classification</span>
             <button 
               onClick={(e) => { e.stopPropagation(); setClassificationFilterOpen(!classificationFilterOpen); }}
               className={`p-1 rounded-md transition-colors cursor-pointer ${selectedClassification !== "All Classifications" ? 'bg-[#046241] text-white dark:bg-[#ffb347] dark:text-[#133020]' : 'text-gray-400 hover:bg-black/5 dark:hover:bg-white/10'}`}
@@ -388,9 +407,9 @@ export function StatusView({
               </>
             )}
           </div>
-          <div>Contact Person</div>
-          <div>Industry</div>
-          <div>Status</div>
+          <div className="min-w-0 truncate">Contact Person</div>
+          <div className="min-w-0 truncate">Industry</div>
+          <div className="justify-self-center text-center min-w-0 truncate">Status</div>
           <div className="text-right">Updated</div>
         </div>
 
@@ -454,9 +473,9 @@ export function StatusView({
                 </div>
 
                 {/* Status */}
-                <div>
+                <div className="min-w-0 justify-self-center text-center">
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold border ${getStatusColor(company.status || "Not Active")}`}>
-                    <span className={`w-2 h-2 rounded-full ${company.status === 'Accepted' ? 'bg-[#046241] dark:bg-[#4ade80]' : company.status === 'Rejected' ? 'bg-red-600' : company.status === 'Responded' ? 'bg-[#0d9488] dark:bg-[#2dd4bf]' : company.status === 'Pending' ? 'bg-[#ffb347]' : 'bg-gray-400'}`} />
+                    <span className={`w-2 h-2 rounded-full ${company.status === 'Accepted' ? 'bg-[#046241] dark:bg-[#4ade80]' : company.status === 'Rejected' ? 'bg-red-600' : company.status === 'Responded' ? 'bg-[#0d9488] dark:bg-[#2dd4bf]' : company.status === 'Hot Lead' ? 'bg-orange-500' : company.status === 'Cold Lead' ? 'bg-blue-500' : company.status === 'Pending' ? 'bg-[#ffb347]' : 'bg-gray-400'}`} />
                     {company.status || "Not Active"}
                   </span>
                 </div>

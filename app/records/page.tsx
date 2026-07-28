@@ -5,6 +5,8 @@ import * as xlsx from "xlsx";
 import { supabase, fetchAllCompanyContacts } from "../../lib/supabase/client";
 import { RecordsTable, type RecordData } from "../../components/records/RecordsTable";
 import { CompletedFilesModal } from "../../components/records/CompletedFilesModal";
+import { ExportConfigModal } from "../../components/records/ExportConfigModal";
+import { normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 import { ScanClientsModal } from "../../components/records/ScanClientsModal";
 import { CustomSelect } from "../../components/ui/CustomSelect";
 import { SelectDropdown } from "../../components/ui/SelectDropdown";
@@ -18,6 +20,7 @@ export default function RecordsPage() {
   const [selectedFile, setSelectedFile] = useState("All Files");
   const [contactDeetsFilter, setContactDeetsFilter] = useState("All Contact Deets");
   const [isImporting, setIsImporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New features state
@@ -154,7 +157,9 @@ export default function RecordsPage() {
       })
       .map((r) => r.sourceFile)
       .filter(Boolean)
-  ));
+  )).sort() as string[];
+
+  const fileOptions = ["All Files", ...availableFiles];
 
   const formattedDate = () => {
     return new Date().toLocaleDateString("en-US", {
@@ -202,9 +207,18 @@ export default function RecordsPage() {
       if (diffDays > timeRangeDays && !isNaN(diffDays)) return false;
     }
 
-    const matchesFile = selectedFile === "All Files" || r.sourceFile === selectedFile;
+    const sq = searchQuery.toLowerCase();
+    const matchesSearch =
+      (r.companyName || "").toLowerCase().includes(sq) ||
+      (r.country || "").toLowerCase().includes(sq) ||
+      (r.contactPerson || "").toLowerCase().includes(sq) ||
+      (r.status || "").toLowerCase().includes(sq);
+    
+    const matchesFile = 
+      selectedFile === "All Files" || 
+      r.sourceFile === selectedFile;
 
-    return matchesFile;
+    return matchesFile && matchesSearch;
   });
 
   const getCompletenessScore = (r: RecordData) => {
@@ -239,7 +253,7 @@ export default function RecordsPage() {
 
   const handleDeleteCompletedFiles = async (filesToDelete: string[]) => {
     try {
-      const recordsToDelete = records.filter(r => filesToDelete.includes(r.sourceFile));
+      const recordsToDelete = records.filter(r => r.sourceFile && filesToDelete.includes(normalizeSourceName(r.sourceFile)));
       const deletedImports = JSON.parse(localStorage.getItem('lifelead_deleted_imports') || '[]');
       
       recordsToDelete.forEach(r => {
@@ -309,7 +323,7 @@ export default function RecordsPage() {
             />
             <button 
               onClick={() => setIsScanModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#046241] to-[#ffb347] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#046241]/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-6 py-3 bg-[#ffb347] hover:bg-[#ffa726] text-[#133020] rounded-xl text-sm font-bold shadow-lg shadow-[#ffb347]/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -400,6 +414,15 @@ export default function RecordsPage() {
 
           {/* File dropdown and Filter */}
           <div className="flex flex-col sm:flex-row items-center justify-end gap-3 flex-1 lg:max-w-4xl">
+            <div className="relative w-full sm:w-64 shrink-0">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-[#14120e] border border-gray-200/80 dark:border-white/10 rounded-xl text-sm font-medium text-[#133020] dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241]/20 shadow-sm transition-all"
+              />
+            </div>
             <div className="relative w-full sm:w-48 shrink-0">
               <CustomSelect
                 options={["All Contact Deets", "Complete contact info", "Email only", "Telephone only", "Phone only"]}
@@ -410,7 +433,7 @@ export default function RecordsPage() {
 
             <div className="relative w-full sm:w-48 shrink-0">
               <CustomSelect
-                options={["All Files", ...availableFiles]}
+                options={fileOptions}
                 value={selectedFile}
                 onChange={setSelectedFile}
               />

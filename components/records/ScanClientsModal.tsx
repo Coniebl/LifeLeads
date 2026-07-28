@@ -165,10 +165,36 @@ export function ScanClientsModal({ onClose, onScanComplete, importCategory, exis
         }
       }
 
-      // No third fallback - User requested strictly Apify agents only
+      // 3. Fallback to SerpApi (Agent 3 - Google Local) if both Apify agents fail (e.g. rate limit exceeded)
+      if (!finalData) {
+        setProgress("Apify limit reached or failed. Falling back to Google Local Search (Agent 3)...");
+        const agent3Res = await fetch("/api/scan-clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+             location, 
+             industries: finalIndustries, 
+             category: importCategory,
+             engine: 'serpapi',
+             existingCompanyNames
+          }),
+        });
+
+        if (agent3Res.ok) {
+          const agent3Data = await agent3Res.json();
+          if (agent3Data.results && agent3Data.results.length > 0) {
+            finalData = agent3Data;
+          } else {
+            console.warn("Agent 3 returned 0 results");
+          }
+        } else {
+          const errData = await agent3Res.json();
+          console.warn("Agent 3 failed:", errData.error);
+        }
+      }
 
       if (!finalData || !finalData.results || finalData.results.length === 0) {
-        alert("No clients found for this location and industry.");
+        alert("Scraping failed: Apify monthly limit may be exceeded and Google Search returned 0 leads.");
         setIsScanning(false);
         return;
       }

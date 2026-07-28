@@ -1,4 +1,5 @@
 import React from "react";
+import { formatLocationWithCountry } from "../../lib/normalize";
 
 export type CompanyData = {
   id: string;
@@ -15,7 +16,8 @@ export type CompanyData = {
   website?: string;
   source?: string;
   category?: "Companies" | "Filipino Community Organizations";
-  status?: "Pending" | "Processing" | "Responded" | "Accepted" | "Rejected" | "Not Active";
+  status?: "Pending" | "Processing" | "Responded" | "Accepted" | "Rejected" | "Not Active" | "Hot Lead" | "Cold Lead";
+  aiServiceIntent?: string;
   updatedAt?: string;
 };
 
@@ -39,6 +41,18 @@ export function CompanyCard({ company, onClick }: { company: CompanyData; onClic
   const joinDate = company.updatedAt || "No Date";
   const countryCode = company.country.substring(0, 2).toUpperCase();
 
+  const getBadgeStyle = (status?: string) => {
+    switch (status) {
+      case "Hot Lead": return "bg-red-500 text-white border-red-600 shadow-[0_0_10px_rgba(239,68,68,0.8)] dark:shadow-[0_0_12px_rgba(248,113,113,1)]";
+      case "Cold Lead": return "bg-blue-500 text-white border-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.8)] dark:shadow-[0_0_12px_rgba(96,165,250,1)]";
+      case "Pending": return "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-400";
+      case "Responded": return "bg-teal-100 text-teal-700 border-teal-300 dark:bg-teal-900/30 dark:text-teal-400";
+      case "Accepted": return "bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400";
+      case "Rejected": return "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400";
+      default: return "bg-gray-100 dark:bg-white/10 text-gray-400 border-gray-200/50 dark:border-white/5";
+    }
+  };
+
   return (
     <div 
       onClick={onClick}
@@ -49,7 +63,7 @@ export function CompanyCard({ company, onClick }: { company: CompanyData; onClic
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-lg ${bgColor} shadow-md`}>
             {initials}
           </div>
-          <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-[10px] font-black text-gray-400 uppercase tracking-widest border border-gray-200/50 dark:border-white/5">
+          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getBadgeStyle(company.status)}`}>
             {company.status || "Not Active"}
           </span>
         </div>
@@ -64,7 +78,7 @@ export function CompanyCard({ company, onClick }: { company: CompanyData; onClic
           </div>
           <div className="flex items-center gap-1.5 truncate max-w-full text-xs font-medium text-gray-500 dark:text-gray-400">
             <span className="uppercase text-[9px] text-[#ffb347] font-black">{countryCode}</span>
-            <span className="truncate">{company.country}</span>
+            <span className="truncate">{formatLocationWithCountry(company.country)}</span>
           </div>
         </div>
       </div>

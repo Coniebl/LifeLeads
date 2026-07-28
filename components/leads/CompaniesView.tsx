@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { UserPlusIcon } from "@heroicons/react/24/outline";
+import { formatLocationWithCountry, normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 import { CompanyCard, type CompanyData } from "./CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
+import { CountrySelectDropdown, type CountryOption } from "./CountrySelectDropdown";
 import { supabase } from "../../lib/supabase/client";
 
 export function CompaniesView({ companies, setCompanies }: { companies: CompanyData[], setCompanies: React.Dispatch<React.SetStateAction<CompanyData[]>> }) {
@@ -12,7 +15,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [selectedIndustry, setSelectedIndustry] = useState("All Industries");
   const [selectedCountry, setSelectedCountry] = useState("All Countries");
-  const [selectedSource, setSelectedSource] = useState("All Records");
+  const [selectedSource, setSelectedSource] = useState("All Files");
   const [contactDeetsFilter, setContactDeetsFilter] = useState("All Contact Deets");
   
   // Subcategories: Companies vs Filipino Community Organizations
@@ -44,8 +47,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
   // Base list of leads matching the active category before text/dropdown filters
   const baseCompaniesForCategory = companies.filter(c => {
-    // Check if item has already been processed out of Leads
-    if (c.status === "Pending" || c.status === "Accepted" || c.status === "Rejected") {
+    // Only show items that are strictly Not Active (unprocessed)
+    if (c.status !== "Not Active") {
       return false;
     }
     // Classify category: use explicit category or infer from name
@@ -53,9 +56,60 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     return itemCategory === activeSubcategory;
   });
 
-  const allIndustries = ["All Industries", ...Array.from(new Set(baseCompaniesForCategory.flatMap(c => c.industries)))];
-  const allCountries = ["All Countries", ...Array.from(new Set(baseCompaniesForCategory.map(c => c.country)))];
-  const allSources = ["All Records", ...Array.from(new Set(baseCompaniesForCategory.map(c => c.source).filter(Boolean)))] as string[];
+  // 1. Compute dynamic filters based on current selection
+  const companiesMatchingCountryAndSource = baseCompaniesForCategory.filter(c => {
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const parentMatches = getCountryForLocation(normCountry) === selectedCountry;
+    const matchesCountry = selectedCountry === "All Countries" || parentMatches || normCountry === selectedCountry;
+    const matchesSource = selectedSource === "All Files" || (c.source || "Unknown") === selectedSource;
+    return matchesCountry && matchesSource;
+  });
+
+  const companiesMatchingCountryAndIndustry = baseCompaniesForCategory.filter(c => {
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const parentMatches = getCountryForLocation(normCountry) === selectedCountry;
+    const matchesCountry = selectedCountry === "All Countries" || parentMatches || normCountry === selectedCountry;
+    const matchesIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
+    return matchesCountry && matchesIndustry;
+  });
+
+  const allIndustries = ["All Industries", ...Array.from(new Set(companiesMatchingCountryAndSource.flatMap(c => c.industries)))].sort();
+  const allSources = ["All Files", ...Array.from(new Set(companiesMatchingCountryAndIndustry.map(c => c.source).filter(Boolean)))].sort();
+
+  // Compute hierarchical countries
+  const hierarchicalCountries: CountryOption[] = [{ label: "All Countries", value: "All Countries" }];
+  const rawCountries = Array.from(new Set(baseCompaniesForCategory.map(c => c.country ? normalizeLocationName(c.country) : "").filter(Boolean))).sort();
+  const groupedCountries: Record<string, string[]> = {};
+  
+  rawCountries.forEach(c => {
+    const parent = getCountryForLocation(c) || c;
+    if (!groupedCountries[parent]) groupedCountries[parent] = [];
+    const lower = c.toLowerCase();
+    if (lower !== parent.toLowerCase() && lower !== "united states" && lower !== "us") {
+      groupedCountries[parent].push(c);
+    }
+  });
+
+  const sortedParents = Object.keys(groupedCountries).sort((a, b) => {
+    const aLower = a.toLowerCase();
+    const bLower = b.toLowerCase();
+    if (aLower === "usa" || aLower === "united states") return -1;
+    if (bLower === "usa" || bLower === "united states") return 1;
+    return a.localeCompare(b);
+  });
+
+  sortedParents.forEach(parentCountry => {
+    const children = groupedCountries[parentCountry].sort();
+    if (children.length > 0) {
+      hierarchicalCountries.push({
+        label: parentCountry,
+        value: parentCountry,
+        children: children.map(child => ({ label: child, value: child }))
+      });
+    } else {
+      hierarchicalCountries.push({ label: parentCountry, value: parentCountry });
+    }
+  });
 
   // Apply search and dropdown filters
   const filteredCompanies = baseCompaniesForCategory.filter(c => {
@@ -63,8 +117,10 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                           c.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (c.contactPerson && c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesIndustry = selectedIndustry === "All Industries" || c.industries.includes(selectedIndustry);
-    const matchesCountry = selectedCountry === "All Countries" || c.country === selectedCountry;
-    const matchesSource = selectedSource === "All Records" || (c.source || "Unknown") === selectedSource;
+    const normCountry = c.country ? normalizeLocationName(c.country) : "";
+    const parentMatches = getCountryForLocation(normCountry) === selectedCountry;
+    const matchesCountry = selectedCountry === "All Countries" || parentMatches || normCountry === selectedCountry;
+    const matchesSource = selectedSource === "All Files" || (c.source || "Unknown") === selectedSource;
 
     let matchesContact = true;
     if (contactDeetsFilter !== "All Contact Deets") {
@@ -282,7 +338,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
             }
-            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-bold text-[#046241] dark:text-[#ffb347]"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-bold text-[#046241] dark:text-[#ffb347] max-w-[200px]"
             dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
             optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
             activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
@@ -303,10 +359,10 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
             activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
           
-          <SelectDropdown
+          <CountrySelectDropdown
             value={selectedCountry}
             onChange={setSelectedCountry}
-            options={allCountries.map(c => ({ label: c, value: c }))}
+            options={hierarchicalCountries}
             icon={
               <svg className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
