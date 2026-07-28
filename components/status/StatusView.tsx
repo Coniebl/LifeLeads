@@ -341,12 +341,12 @@ export function StatusView({
       {/* Tabulated Display */}
       <div className="flex-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden flex flex-col min-h-[360px]">
         {/* Table Header */}
-        <div className="grid grid-cols-[40px_auto_2.5fr_1fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-6 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest overflow-visible">
+        <div className="grid grid-cols-[40px_auto_2.5fr_1fr_1.5fr_1.5fr_1.2fr_100px] gap-4 items-center px-4 py-4 bg-gray-50/70 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/5 text-[11px] font-black text-gray-400 uppercase tracking-widest overflow-visible">
           <div>No.</div>
           <div className="w-10"></div>
-          <div>Name / Organization</div>
-          <div className="flex items-center gap-1 relative">
-            Classification
+          <div className="min-w-0 truncate">Name / Organization</div>
+          <div className="flex items-center gap-1 relative min-w-0">
+            <span className="truncate">Classification</span>
             <button 
               onClick={(e) => { e.stopPropagation(); setClassificationFilterOpen(!classificationFilterOpen); }}
               className={`p-1 rounded-md transition-colors cursor-pointer ${selectedClassification !== "All Classifications" ? 'bg-[#046241] text-white dark:bg-[#ffb347] dark:text-[#133020]' : 'text-gray-400 hover:bg-black/5 dark:hover:bg-white/10'}`}
@@ -388,9 +388,9 @@ export function StatusView({
               </>
             )}
           </div>
-          <div>Contact Person</div>
-          <div>Industry</div>
-          <div>Status</div>
+          <div className="min-w-0 truncate">Contact Person</div>
+          <div className="min-w-0 truncate">Industry</div>
+          <div className="justify-self-center text-center min-w-0 truncate">Status</div>
           <div className="text-right">Updated</div>
         </div>
 
@@ -454,7 +454,7 @@ export function StatusView({
                 </div>
 
                 {/* Status */}
-                <div>
+                <div className="min-w-0 justify-self-center text-center">
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold border ${getStatusColor(company.status || "Not Active")}`}>
                     <span className={`w-2 h-2 rounded-full ${company.status === 'Accepted' ? 'bg-[#046241] dark:bg-[#4ade80]' : company.status === 'Rejected' ? 'bg-red-600' : company.status === 'Responded' ? 'bg-[#0d9488] dark:bg-[#2dd4bf]' : company.status === 'Hot Lead' ? 'bg-orange-500' : company.status === 'Cold Lead' ? 'bg-blue-500' : company.status === 'Pending' ? 'bg-[#ffb347]' : 'bg-gray-400'}`} />
                     {company.status || "Not Active"}

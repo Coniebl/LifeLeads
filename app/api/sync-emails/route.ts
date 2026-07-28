@@ -43,8 +43,8 @@ export async function POST() {
 
         for (const lead of respondedLeads) {
             // Because they are in 'Responded' status, we know they have already replied.
-            // Simulate AI Categorization (50/50 chance for Hot/Cold)
-            const isHot = Math.random() < 0.5;
+            // Simulate AI Categorization (80% chance for Hot, 20% for Cold to give more test data)
+            const isHot = Math.random() < 0.8;
             const newStatus = isHot ? 'Hot Lead' : 'Cold Lead';
             const serviceIntent = isHot ? services[Math.floor(Math.random() * services.length)] : null;
 
