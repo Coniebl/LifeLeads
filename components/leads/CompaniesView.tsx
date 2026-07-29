@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { UserPlusIcon } from "@heroicons/react/24/outline";
+
 import { formatLocationWithCountry, normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 import { CompanyCard, type CompanyData } from "./CompanyCard";
 import { SelectDropdown } from "../ui/SelectDropdown";
@@ -53,6 +53,11 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     }
     // Classify category: use explicit category or infer from name
     const itemCategory = c.category || "Companies";
+    if (activeSubcategory === "Companies") {
+      return itemCategory === "Companies" || itemCategory === "Scraped Companies";
+    } else if (activeSubcategory === "Filipino Community Organizations") {
+      return itemCategory === "Filipino Community Organizations" || itemCategory === "Scraped Orgs";
+    }
     return itemCategory === activeSubcategory;
   });
 
@@ -74,11 +79,23 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
   });
 
   const allIndustries = ["All Industries", ...Array.from(new Set(companiesMatchingCountryAndSource.flatMap(c => c.industries)))].sort();
-  const allSources = ["All Files", ...Array.from(new Set(companiesMatchingCountryAndIndustry.map(c => c.source).filter(Boolean)))].sort();
+  const allSources = ["All Files", ...Array.from(new Set(companiesMatchingCountryAndIndustry.map(c => c.source).filter(Boolean)))].sort() as string[];
 
   // Compute hierarchical countries
   const hierarchicalCountries: CountryOption[] = [{ label: "All Countries", value: "All Countries" }];
   const rawCountries = Array.from(new Set(baseCompaniesForCategory.map(c => c.country ? normalizeLocationName(c.country) : "").filter(Boolean))).sort();
+  
+  const countryCounts: Record<string, number> = {};
+  baseCompaniesForCategory.forEach(c => {
+    if (c.country) {
+      const norm = normalizeLocationName(c.country);
+      if (norm) {
+        countryCounts[norm] = (countryCounts[norm] || 0) + 1;
+      }
+    }
+  });
+
+  const parentTotals: Record<string, number> = {};
   const groupedCountries: Record<string, string[]> = {};
   
   rawCountries.forEach(c => {
@@ -88,6 +105,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     if (lower !== parent.toLowerCase() && lower !== "united states" && lower !== "us") {
       groupedCountries[parent].push(c);
     }
+    parentTotals[parent] = (parentTotals[parent] || 0) + (countryCounts[c] || 0);
   });
 
   const sortedParents = Object.keys(groupedCountries).sort((a, b) => {
@@ -100,14 +118,25 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
 
   sortedParents.forEach(parentCountry => {
     const children = groupedCountries[parentCountry].sort();
+    const parentCount = parentTotals[parentCountry] || 0;
+    
     if (children.length > 0) {
       hierarchicalCountries.push({
         label: parentCountry,
         value: parentCountry,
-        children: children.map(child => ({ label: child, value: child }))
+        count: parentCount,
+        children: children.map(child => ({ 
+          label: child, 
+          value: child,
+          count: countryCounts[child] || 0
+        }))
       });
     } else {
-      hierarchicalCountries.push({ label: parentCountry, value: parentCountry });
+      hierarchicalCountries.push({ 
+        label: parentCountry, 
+        value: parentCountry,
+        count: parentCount
+      });
     }
   });
 
@@ -284,8 +313,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
               Leads - {activeSubcategory}
             </span>
           </h1>
-          <p className="text-sm font-medium text-[#046241]/70 dark:text-gray-400">
-            Showing {filteredCompanies.length} not active leads · {activeSubcategory}
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Showing <span className="font-black text-[#133020] dark:text-[#ffb347] px-0.5 text-[15px]">{filteredCompanies.length}</span> not active leads • {activeSubcategory}
           </p>
         </div>
 
@@ -323,9 +352,9 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
             }
-            className="flex items-center justify-between gap-1.5 px-3 py-2.5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200 w-[190px]"
             dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
 
@@ -340,7 +369,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
             }
             className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-[#046241]/5 dark:bg-white/5 hover:bg-[#046241]/10 dark:hover:bg-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-bold text-[#046241] dark:text-[#ffb347] max-w-[200px]"
             dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
 
@@ -353,9 +382,9 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
               </svg>
             }
-            className="flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-gray-100 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
             dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
           
@@ -368,10 +397,8 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
               </svg>
             }
-            className="flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-gray-100 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-xs font-semibold text-gray-700 dark:text-gray-200"
             dropdownClassName="absolute top-full right-0 mt-2 w-full min-w-[180px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-3 py-2 text-xs font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
-            activeOptionClassName="w-full text-left px-3 py-2 text-xs font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
         </div>
       </div>
@@ -395,7 +422,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-bold text-[#133020] dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-bold text-[#133020] dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   Previous
                 </button>
@@ -405,7 +432,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-bold text-[#133020] dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-bold text-[#133020] dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   Next
                 </button>
@@ -479,7 +506,7 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
                 {/* Close Button */}
                 <button 
                   onClick={() => setSelectedCompany(null)} 
-                  className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-colors"
+                  className="p-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-white/5 rounded-full transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -729,3 +756,5 @@ export function CompaniesView({ companies, setCompanies }: { companies: CompanyD
     </div>
   );
 }
+
+

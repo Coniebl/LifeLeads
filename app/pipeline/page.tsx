@@ -20,7 +20,8 @@ export default function PipelinePage() {
           }
           if (inds.length === 0) inds = ["Business Services"];
 
-          const inferredCat = r.category || "Companies";
+          const rawCat = r.category || "Companies";
+          const inferredCat = rawCat === "Scraped Companies" ? "Companies" : rawCat === "Scraped Orgs" ? "Filipino Community Organizations" : rawCat;
 
           return {
             id: r.id,
@@ -39,6 +40,7 @@ export default function PipelinePage() {
             dateAdded: r.created_at,
             status: r.status,
             source: r.source_file,
+            leads: 0,
           };
         });
 

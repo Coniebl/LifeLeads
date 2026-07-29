@@ -217,10 +217,12 @@ export function PipelineView({ companies }: PipelineViewProps) {
     <div className="flex flex-col h-full gap-6 relative">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 mt-2">
         <div>
-          <h1 className="text-[32px] md:text-4xl font-black tracking-tight mb-1 text-[#046241] dark:text-[#4ade80]">
-            Response Pipeline
+          <h1 className="text-[32px] md:text-4xl font-black tracking-tight mb-1">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#133020] via-[#046241] to-[#b45309] dark:from-[#4ade80] dark:via-[#2dd4bf] dark:to-[#ffb347]">
+              Response Pipeline
+            </span>
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium">Manage and route your AI-categorized client responses.</p>
+          <p className="text-sm font-medium text-[#046241]/70 dark:text-gray-400">Manage and route your AI-categorized client responses.</p>
         </div>
         <div className="flex items-center gap-3">
           <SelectDropdown

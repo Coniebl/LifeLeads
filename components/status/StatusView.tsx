@@ -276,7 +276,7 @@ export function StatusView({
             </span>
           </h1>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Monitor and update offer decisions · {tabulatedCompanies.length} showing in {statusTab}
+            Monitor and update offer decisions • <span className="font-black text-[#133020] dark:text-[#ffb347] text-[15px] px-0.5">{tabulatedCompanies.length}</span> showing in {statusTab}
           </p>
         </div>
 

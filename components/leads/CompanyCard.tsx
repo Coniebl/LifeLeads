@@ -15,7 +15,7 @@ export type CompanyData = {
   linkedin?: string;
   website?: string;
   source?: string;
-  category?: "Companies" | "Filipino Community Organizations";
+  category?: "Companies" | "Filipino Community Organizations" | "Scraped Companies" | "Scraped Orgs";
   status?: "Pending" | "Processing" | "Responded" | "Accepted" | "Rejected" | "Not Active" | "Hot Lead" | "Cold Lead";
   aiServiceIntent?: string;
   updatedAt?: string;
