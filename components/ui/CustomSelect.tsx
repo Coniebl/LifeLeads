@@ -55,7 +55,7 @@ export function CustomSelect({ options, value, onChange }: CustomSelectProps) {
               className={`px-4 py-2 text-xs cursor-pointer transition-colors whitespace-normal break-words ${
                 value === option
                   ? "font-bold bg-[#046241]/10 text-[#046241] dark:bg-[#4ade80]/20 dark:text-[#4ade80]"
-                  : "font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10"
+                  : "font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
               }`}
             >
               {option}
@@ -66,3 +66,4 @@ export function CustomSelect({ options, value, onChange }: CustomSelectProps) {
     </div>
   );
 }
+

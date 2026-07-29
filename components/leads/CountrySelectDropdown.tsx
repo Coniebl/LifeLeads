@@ -77,14 +77,14 @@ export function CountrySelectDropdown({
           <div className="max-h-[350px] overflow-y-auto py-1 custom-scrollbar">
             {options.map((opt, i) => (
               <div key={i}>
-                <div className="flex items-stretch w-full hover:bg-gray-50 dark:hover:bg-[#133020] transition-colors">
+                <div className="flex items-stretch w-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                   <button
                     onClick={(e) => handleSelect(e, opt.value)}
-                    className={`flex-1 flex items-center justify-between text-left px-3 py-2 text-[13px] transition-colors ${value === opt.value ? 'bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] font-bold' : 'text-[#133020] dark:text-gray-300 font-bold'}`}
+                    className={`flex-1 flex items-center justify-between text-left px-3 py-2 text-xs transition-colors ${value === opt.value ? 'bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] font-bold' : 'text-[#133020] dark:text-gray-300 font-medium'}`}
                   >
                     <span>{opt.label}</span>
                     {opt.count !== undefined && (
-                      <span className={`font-black ${value === opt.value ? 'text-[#046241] dark:text-[#ffb347]' : 'text-[#133020] dark:text-gray-100'}`}>{opt.count}</span>
+                      <span className="text-gray-400 font-semibold">{opt.count}</span>
                     )}
                   </button>
                   {opt.children && opt.children.length > 0 && (
@@ -104,14 +104,14 @@ export function CountrySelectDropdown({
                       <button
                         key={j}
                         onClick={(e) => handleSelect(e, child.value)}
-                        className={`w-full flex items-center justify-between text-left pl-5 pr-3 py-2 text-[12px] transition-colors ${value === child.value ? 'bg-[#046241]/5 dark:bg-[#046241]/20 text-[#046241] dark:text-[#ffb347] font-bold' : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-white/5 font-medium'}`}
+                        className={`w-full flex items-center justify-between text-left pl-5 pr-3 py-2 text-[11px] transition-colors ${value === child.value ? 'bg-[#046241]/5 dark:bg-[#046241]/20 text-[#046241] dark:text-[#ffb347] font-bold' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/5 font-medium'}`}
                       >
                         <div className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#046241] dark:bg-[#ffb347]"></div>
                           <span>{child.label}</span>
                         </div>
                         {child.count !== undefined && (
-                          <span className={`font-bold ${value === child.value ? 'text-[#046241] dark:text-[#ffb347]' : 'text-gray-700 dark:text-gray-200'}`}>{child.count}</span>
+                          <span className="text-gray-400 font-medium">{child.count}</span>
                         )}
                       </button>
                     ))}
@@ -125,3 +125,5 @@ export function CountrySelectDropdown({
     </div>
   );
 }
+
+

@@ -115,9 +115,9 @@ export function DashboardHeader({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             }
-            className="flex w-full items-center justify-between gap-2 px-4 py-3 bg-white dark:bg-[#181512] hover:bg-gray-50 dark:hover:bg-[#23201b] hover:border-[#046241]/30 dark:hover:border-white/20 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-gray-700 dark:text-gray-200"
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 bg-white dark:bg-[#181512] hover:bg-gray-100 dark:hover:bg-[#23201b] hover:border-[#046241]/30 dark:hover:border-white/20 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-gray-700 dark:text-gray-200"
             dropdownClassName="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
         </div>
@@ -136,9 +136,9 @@ export function DashboardHeader({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             }
-            className="flex w-full items-center justify-between gap-2 px-4 py-3 bg-white dark:bg-[#181512] hover:bg-gray-50 dark:hover:bg-[#23201b] hover:border-[#046241]/30 dark:hover:border-white/20 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-gray-700 dark:text-gray-200"
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 bg-white dark:bg-[#181512] hover:bg-gray-100 dark:hover:bg-[#23201b] hover:border-[#046241]/30 dark:hover:border-white/20 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#046241] dark:focus:ring-[#ffb347] focus:outline-none rounded-xl transition-all text-sm font-bold text-gray-700 dark:text-gray-200"
             dropdownClassName="absolute top-full mt-2 right-0 w-full min-w-[200px] bg-white dark:bg-[#1a1714] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-[#f5eedb] dark:hover:bg-[#133020] transition-colors"
+            optionClassName="w-full text-left px-4 py-2.5 text-sm font-medium text-[#133020] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             activeOptionClassName="w-full text-left px-4 py-2.5 text-sm font-bold bg-[#046241]/10 dark:bg-[#046241]/30 text-[#046241] dark:text-[#ffb347] transition-colors"
           />
         </div>
@@ -146,3 +146,5 @@ export function DashboardHeader({
     </div>
   );
 }
+
+

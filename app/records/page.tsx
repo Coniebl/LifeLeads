@@ -412,7 +412,7 @@ export default function RecordsPage() {
 
           {/* File dropdown and Filter */}
           <div className="flex flex-col sm:flex-row items-center justify-end gap-3 flex-1 lg:max-w-4xl">
-            <div className="relative w-full sm:w-48 shrink-0">
+            <div className="relative w-full sm:w-[230px] shrink-0">
               <CustomSelect
                 options={["All Contact Deets", "Complete contact info", "Email only", "Telephone only", "Phone only"]}
                 value={contactDeetsFilter}
@@ -420,7 +420,7 @@ export default function RecordsPage() {
               />
             </div>
 
-            <div className="relative w-full sm:w-48 shrink-0">
+            <div className="relative w-full sm:w-[230px] shrink-0">
               <CustomSelect
                 options={fileOptions}
                 value={selectedFile}

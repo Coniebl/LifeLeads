@@ -311,15 +311,15 @@ export function DashboardGreetingCard() {
             })}
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 pt-4 border-t border-white/10">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Companies</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Orgs</span>
-            </div>
+            <div className="grid grid-cols-2 place-items-start gap-x-4 gap-y-2 mt-6 pt-4 border-t border-white/10 w-full px-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Companies</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Orgs</span>
+              </div>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#a855f7]"></span>
               <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Scraped Companies</span>
