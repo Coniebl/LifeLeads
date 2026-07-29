@@ -29,12 +29,20 @@ const US_LOCATIONS = [
   "united states", "america", "united states of america"
 ];
 
+const CHINA_LOCATIONS = [
+  "china", "beijing", "shanghai", "beijing g", "shannghai"
+];
+
+const UK_LOCATIONS = [
+  "uk", "scotland", "scotland(uk)", "england", "wales", "united kingdom"
+];
+
 export function getCountryForLocation(location: string): string | null {
   if (!location) return null;
   const lowerLoc = location.toLowerCase();
   
   // Exact matches for acronyms to avoid matching "us" inside other words
-  const exactMatches = ["usa", "us"];
+  const exactMatches = ["usa", "us", "u.s.", "u.s.a"];
   if (exactMatches.includes(lowerLoc)) {
     return "USA";
   }
@@ -46,6 +54,14 @@ export function getCountryForLocation(location: string): string | null {
 
   if (US_LOCATIONS.some(usLoc => lowerLoc.includes(usLoc) || lowerLoc === usLoc)) {
     return "USA";
+  }
+
+  if (CHINA_LOCATIONS.some(loc => lowerLoc.includes(loc) || lowerLoc === loc)) {
+    return "China";
+  }
+
+  if (UK_LOCATIONS.some(loc => lowerLoc.includes(loc) || lowerLoc === loc)) {
+    return "United Kingdom";
   }
   
   return null;

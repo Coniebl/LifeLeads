@@ -5,7 +5,7 @@ import * as xlsx from "xlsx";
 import { supabase, fetchAllCompanyContacts } from "../../lib/supabase/client";
 import { RecordsTable, type RecordData } from "../../components/records/RecordsTable";
 import { CompletedFilesModal } from "../../components/records/CompletedFilesModal";
-import { ExportConfigModal } from "../../components/records/ExportConfigModal";
+
 import { normalizeLocationName, getCountryForLocation } from "../../lib/normalize";
 import { ScanClientsModal } from "../../components/records/ScanClientsModal";
 import { CustomSelect } from "../../components/ui/CustomSelect";
@@ -20,7 +20,6 @@ export default function RecordsPage() {
   const [selectedFile, setSelectedFile] = useState("All Files");
   const [contactDeetsFilter, setContactDeetsFilter] = useState("All Contact Deets");
   const [isImporting, setIsImporting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New features state
@@ -152,8 +151,9 @@ export default function RecordsPage() {
     records
       .filter((r) => {
         if (categoryFilter === "All") return true;
-        if (categoryFilter === "Companies") return !r.category || r.category === "Companies";
-        return r.category === "Filipino Community Organizations";
+        if (categoryFilter === "Companies") return !r.category || r.category === "Companies" || r.category === "Scraped Companies";
+        if (categoryFilter === "Filipino Community Organizations") return r.category === "Filipino Community Organizations" || r.category === "Scraped Orgs";
+        return r.category === categoryFilter;
       })
       .map((r) => r.sourceFile)
       .filter(Boolean)
@@ -177,9 +177,14 @@ export default function RecordsPage() {
 
     // Category pill filter
     if (categoryFilter !== "All") {
-      const matchCat = categoryFilter === "Companies"
-        ? (!r.category || r.category === "Companies")
-        : r.category === "Filipino Community Organizations";
+      let matchCat = false;
+      if (categoryFilter === "Companies") {
+        matchCat = !r.category || r.category === "Companies" || r.category === "Scraped Companies";
+      } else if (categoryFilter === "Filipino Community Organizations") {
+        matchCat = r.category === "Filipino Community Organizations" || r.category === "Scraped Orgs";
+      } else {
+        matchCat = r.category === categoryFilter;
+      }
       if (!matchCat) return false;
     }
 
@@ -207,18 +212,11 @@ export default function RecordsPage() {
       if (diffDays > timeRangeDays && !isNaN(diffDays)) return false;
     }
 
-    const sq = searchQuery.toLowerCase();
-    const matchesSearch =
-      (r.companyName || "").toLowerCase().includes(sq) ||
-      (r.country || "").toLowerCase().includes(sq) ||
-      (r.contactPerson || "").toLowerCase().includes(sq) ||
-      (r.status || "").toLowerCase().includes(sq);
-    
     const matchesFile = 
       selectedFile === "All Files" || 
       r.sourceFile === selectedFile;
 
-    return matchesFile && matchesSearch;
+    return matchesFile;
   });
 
   const getCompletenessScore = (r: RecordData) => {
@@ -253,7 +251,7 @@ export default function RecordsPage() {
 
   const handleDeleteCompletedFiles = async (filesToDelete: string[]) => {
     try {
-      const recordsToDelete = records.filter(r => r.sourceFile && filesToDelete.includes(normalizeSourceName(r.sourceFile)));
+      const recordsToDelete = records.filter(r => r.sourceFile && filesToDelete.includes(r.sourceFile));
       const deletedImports = JSON.parse(localStorage.getItem('lifelead_deleted_imports') || '[]');
       
       recordsToDelete.forEach(r => {
@@ -395,8 +393,8 @@ export default function RecordsPage() {
 
         {/* Search, File Select & 3-Pill Navigation (All, Companies, Filipino Community Organizations) */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 w-full mb-5">
-          {/* 3-Pill Classification Navigation defaulting to All */}
-          <div className="flex p-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-xs">
+          {/* 5-Pill Classification Navigation defaulting to All */}
+          <div className="flex flex-wrap p-1 bg-white dark:bg-[#14120e] rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-xs">
             {(["All", "Companies", "Filipino Community Organizations"] as const).map((tab) => (
               <button
                 key={tab}
@@ -414,16 +412,7 @@ export default function RecordsPage() {
 
           {/* File dropdown and Filter */}
           <div className="flex flex-col sm:flex-row items-center justify-end gap-3 flex-1 lg:max-w-4xl">
-            <div className="relative w-full sm:w-64 shrink-0">
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white dark:bg-[#14120e] border border-gray-200/80 dark:border-white/10 rounded-xl text-sm font-medium text-[#133020] dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#046241]/20 shadow-sm transition-all"
-              />
-            </div>
-            <div className="relative w-full sm:w-48 shrink-0">
+            <div className="relative w-full sm:w-[230px] shrink-0">
               <CustomSelect
                 options={["All Contact Deets", "Complete contact info", "Email only", "Telephone only", "Phone only"]}
                 value={contactDeetsFilter}
@@ -431,7 +420,7 @@ export default function RecordsPage() {
               />
             </div>
 
-            <div className="relative w-full sm:w-48 shrink-0">
+            <div className="relative w-full sm:w-[230px] shrink-0">
               <CustomSelect
                 options={fileOptions}
                 value={selectedFile}
@@ -444,7 +433,7 @@ export default function RecordsPage() {
         {/* Record count indicator and Actions */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-[13px] text-gray-400 font-medium">
-            Showing <span className="font-bold text-[#133020] dark:text-gray-200">{filteredRecords.length}</span> records ({categoryFilter})
+            Showing <span className="font-black text-[#133020] dark:text-[#ffb347] text-[15px] px-0.5">{filteredRecords.length}</span> records ({categoryFilter})
           </p>
 
           <div className="flex items-center gap-3">

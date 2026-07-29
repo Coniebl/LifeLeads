@@ -10,7 +10,7 @@ export type CountryData = {
   percentage: string;
   color: string;
   hex: string;
-  companies: string[];
+  cities: { name: string; count: number }[];
 };
 
 export type IndustryData = {
@@ -154,7 +154,7 @@ export function useDashboardData() {
 
       const uniqueCountries = new Set<string>();
       const uniqueIndustries = new Set<string>();
-      const countryMap: Record<string, { count: number; companies: string[] }> = {};
+      const countryMap: Record<string, { count: number; cities: Record<string, number> }> = {};
       const industryCountMap: Record<string, number> = {};
       const monthlyHotLeads = Array(12).fill(0);
       const monthlyColdLeads = Array(12).fill(0);
@@ -169,34 +169,32 @@ export function useDashboardData() {
         else inactiveCount++;
 
         const rawCountry = record.country || "Unknown";
+        let city = rawCountry.trim();
         let country = rawCountry.trim();
         
         // Extract country from "City, Country" format
         if (country.includes(',')) {
           const parts = country.split(',');
+          city = parts[0].trim();
           country = parts[parts.length - 1].trim();
         }
         
         // Normalize common aliases
-        const lowerCountry = country.toLowerCase();
-        if (lowerCountry === 'uk' || lowerCountry === 'scotland' || lowerCountry === 'scotland(uk)' || lowerCountry === 'england' || lowerCountry === 'wales') {
-          country = 'United Kingdom';
-        } else if (lowerCountry === 'us' || lowerCountry === 'u.s.' || lowerCountry === 'u.s.a' || lowerCountry === 'new york' || lowerCountry === 'los angeles' || lowerCountry === 'usa' || lowerCountry.includes('united states')) {
-          country = 'USA';
+        const mappedCountry = getCountryForLocation(country);
+        if (mappedCountry) {
+          country = mappedCountry;
         }
 
         uniqueCountries.add(country);
         
-        const name = record.company_name?.trim() || "Unknown Company";
+        // Use normalized city name
+        const normalizedCity = normalizeLocationName(city) || city;
 
         if (!countryMap[country]) {
-          countryMap[country] = { count: 0, companies: [] };
+          countryMap[country] = { count: 0, cities: {} };
         }
         countryMap[country].count++;
-        // push unique company names to the country's companies list
-        if (!countryMap[country].companies.includes(name)) {
-           countryMap[country].companies.push(name);
-        }
+        countryMap[country].cities[normalizedCity] = (countryMap[country].cities[normalizedCity] || 0) + 1;
 
         let firstIndustry = "General";
         if (record.industries?.trim()) {
@@ -245,12 +243,15 @@ export function useDashboardData() {
         const formattedCountries: Record<string, CountryData> = {};
         Object.entries(countryMap).forEach(([cName, cData], idx) => {
           const colorObj = colors[idx % colors.length];
+          const sortedCities = Object.entries(cData.cities)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
           formattedCountries[cName] = {
             count: cData.count,
             percentage: `${Math.round((cData.count / total) * 100)}%`,
             color: colorObj.bg,
             hex: colorObj.hex,
-            companies: cData.companies
+            cities: sortedCities
           };
         });
 

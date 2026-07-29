@@ -17,7 +17,7 @@ export interface RecordData {
   website?: string;
   linkedin?: string;
   sourceFile: string;
-  category?: "Companies" | "Filipino Community Organizations";
+  category?: "Companies" | "Filipino Community Organizations" | "Scraped Companies" | "Scraped Orgs";
   createdAt?: string;
 }
 

@@ -69,7 +69,7 @@ export function DashboardGreetingCard() {
   const calendarEvents = useMemo(() => {
     if (!rawRecords || displayYear === null || displayMonth === null) return {};
     
-    const events: Record<number, { imports: { companies: number, fcos: number }, exports: { companies: number, fcos: number } }> = {};
+    const events: Record<number, { imports: { companies: number, fcos: number }, exports: { companies: number, fcos: number }, scrapes: { companies: number, fcos: number } }> = {};
     
     // Process current live records
     rawRecords.forEach(r => {
@@ -77,11 +77,15 @@ export function DashboardGreetingCard() {
       const date = new Date(r.created_at);
       if (date.getFullYear() === displayYear && date.getMonth() === displayMonth) {
         const day = date.getDate();
-        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 } };
+        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 }, scrapes: { companies: 0, fcos: 0 } };
         
         const category = r.category || "Companies";
         if (category === "Filipino Community Organizations") {
           events[day].imports.fcos += 1;
+        } else if (category === "Scraped Companies") {
+          events[day].scrapes.companies += 1;
+        } else if (category === "Scraped Orgs") {
+          events[day].scrapes.fcos += 1;
         } else {
           events[day].imports.companies += 1;
         }
@@ -94,10 +98,14 @@ export function DashboardGreetingCard() {
       const date = new Date(di.date);
       if (date.getFullYear() === displayYear && date.getMonth() === displayMonth) {
         const day = date.getDate();
-        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 } };
+        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 }, scrapes: { companies: 0, fcos: 0 } };
         
         if (di.category === "Filipino Community Organizations") {
           events[day].imports.fcos += 1;
+        } else if (di.category === "Scraped Companies") {
+          events[day].scrapes.companies += 1;
+        } else if (di.category === "Scraped Orgs") {
+          events[day].scrapes.fcos += 1;
         } else {
           events[day].imports.companies += 1;
         }
@@ -109,7 +117,7 @@ export function DashboardGreetingCard() {
       const date = new Date(ex.date);
       if (date.getFullYear() === displayYear && date.getMonth() === displayMonth) {
         const day = date.getDate();
-        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 } };
+        if (!events[day]) events[day] = { imports: { companies: 0, fcos: 0 }, exports: { companies: 0, fcos: 0 }, scrapes: { companies: 0, fcos: 0 } };
 
         if (ex.category === "Filipino Community Organizations") {
           events[day].exports.fcos += ex.count;
@@ -274,15 +282,19 @@ export function DashboardGreetingCard() {
                     </span>
                   )}
                   {/* Hover Tooltip */}
-                  {day && calendarEvents[day] && (
+                  {day && calendarEvents[day] && 
+                   (calendarEvents[day].imports.companies > 0 || 
+                    calendarEvents[day].imports.fcos > 0 || 
+                    calendarEvents[day].scrapes.companies > 0 || 
+                    calendarEvents[day].scrapes.fcos > 0) && (
                     <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col z-50 min-w-[140px] p-2.5 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl text-left pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200">
                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-white/10 pb-1.5 mb-1.5">
                         {monthNames[displayMonth]} {day}, {displayYear}
                       </p>
-                      <div className="text-xs font-bold text-[#ccff00]">+ {calendarEvents[day].imports.companies} Companies Imp.</div>
-                      <div className="text-xs font-bold text-[#ffb347]">+ {calendarEvents[day].imports.fcos} Orgs Imp.</div>
-                      <div className="text-xs font-bold text-[#3b82f6]">- {calendarEvents[day].exports.companies} Companies Exp.</div>
-                      <div className="text-xs font-bold text-[#ec4899]">- {calendarEvents[day].exports.fcos} Orgs Exp.</div>
+                      {calendarEvents[day].imports.companies > 0 && <div className="text-xs font-bold text-[#ccff00]">+ {calendarEvents[day].imports.companies} Companies Imp.</div>}
+                      {calendarEvents[day].imports.fcos > 0 && <div className="text-xs font-bold text-[#ffb347]">+ {calendarEvents[day].imports.fcos} Orgs Imp.</div>}
+                      {calendarEvents[day].scrapes.companies > 0 && <div className="text-xs font-bold text-[#a855f7]">+ {calendarEvents[day].scrapes.companies} Companies Scraped</div>}
+                      {calendarEvents[day].scrapes.fcos > 0 && <div className="text-xs font-bold text-[#ef4444]">+ {calendarEvents[day].scrapes.fcos} Orgs Scraped</div>}
                     </div>
                   )}
                   {/* Decorative dots from data */}
@@ -290,8 +302,8 @@ export function DashboardGreetingCard() {
                     <div className="absolute -bottom-1 flex flex-wrap justify-center gap-0.5 px-1 w-full pointer-events-none">
                       {calendarEvents[day].imports.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#ccff00]"></span>}
                       {calendarEvents[day].imports.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ffb347]"></span>}
-                      {calendarEvents[day].exports.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#3b82f6]"></span>}
-                      {calendarEvents[day].exports.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ec4899]"></span>}
+                      {calendarEvents[day].scrapes.companies > 0 && <span className="w-1 h-1 rounded-full bg-[#a855f7]"></span>}
+                      {calendarEvents[day].scrapes.fcos > 0 && <span className="w-1 h-1 rounded-full bg-[#ef4444]"></span>}
                     </div>
                   )}
                 </div>
@@ -299,14 +311,22 @@ export function DashboardGreetingCard() {
             })}
           </div>
 
-          <div className="flex items-center justify-center gap-x-6 mt-6 pt-4 border-t border-white/10">
+            <div className="grid grid-cols-2 place-items-start gap-x-4 gap-y-2 mt-6 pt-4 border-t border-white/10 w-full px-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Companies</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Orgs</span>
+              </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]"></span>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Companies</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#a855f7]"></span>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Scraped Companies</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ffb347]"></span>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Imp. Orgs</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></span>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Scraped Orgs</span>
             </div>
           </div>
         </div>

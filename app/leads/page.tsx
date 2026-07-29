@@ -23,7 +23,8 @@ export default function CompaniesPage() {
           }
           if (inds.length === 0) inds = ["Business Services"];
 
-          const inferredCat = r.category || "Companies";
+          const rawCat = r.category || "Companies";
+          const inferredCat = rawCat === "Scraped Companies" ? "Companies" : rawCat === "Scraped Orgs" ? "Filipino Community Organizations" : rawCat;
 
           return {
             id: r.id.toString(),

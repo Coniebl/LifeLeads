@@ -21,7 +21,7 @@ export function CountryChart({ countriesData }: CountryChartProps) {
             Companies per Country
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            Hover a bar to see the companies in that country
+            Hover a bar to see the cities in that country
           </p>
         </div>
 
@@ -49,7 +49,7 @@ export function CountryChart({ countriesData }: CountryChartProps) {
           </p>
         </div>
       ) : (
-        <div className="w-full pb-16">
+        <div className="w-full pb-24">
           <div className="relative h-72 border-b border-gray-100 dark:border-white/5 flex items-end justify-between gap-1 sm:gap-2 px-1 sm:px-4 select-none w-full">
             {countries.map(([name, item]) => {
               const maxVal = Math.max(...countries.map(c => c[1].count), 8);
@@ -102,7 +102,7 @@ export function CountryChart({ countriesData }: CountryChartProps) {
                   />
                   
                   {/* Bottom Label (Country) */}
-                  <span className="absolute top-full mt-3 left-1/2 -translate-x-1/2 -rotate-45 text-[9px] sm:text-[10px] font-bold text-gray-500 dark:text-gray-400 text-center w-20 sm:w-24 truncate px-0.5">
+                  <span className="absolute top-full mt-2 right-1/2 origin-top-right -rotate-45 text-[9px] sm:text-[10px] font-bold text-gray-500 dark:text-gray-400 text-right w-24 truncate pr-1">
                     {name}
                   </span>
                 </div>
@@ -144,15 +144,18 @@ export function CountryChart({ countriesData }: CountryChartProps) {
             )}
           </div>
           <div className="flex flex-col gap-1.5 text-xs text-gray-500 dark:text-gray-300 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-            {tooltipData.item.companies.length > 0 ? (
-              tooltipData.item.companies.map((companyName, idx) => (
-                <div key={idx} className="flex items-center gap-2 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#046241] flex-shrink-0" />
-                  <span className="truncate">{companyName}</span>
+            {tooltipData.item.cities && tooltipData.item.cities.length > 0 ? (
+              tooltipData.item.cities.map((city, idx) => (
+                <div key={idx} className="flex items-center justify-between gap-2 font-medium">
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#046241] flex-shrink-0" />
+                    <span className="truncate">{city.name}</span>
+                  </div>
+                  <span className="text-gray-400 font-bold">{city.count}</span>
                 </div>
               ))
             ) : (
-              <div className="text-gray-400 italic">No companies listed</div>
+              <div className="text-gray-400 italic">No cities listed</div>
             )}
           </div>
         </div>

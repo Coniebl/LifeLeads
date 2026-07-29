@@ -225,7 +225,7 @@ export function ScanClientsModal({ onClose, onScanComplete, importCategory, exis
         industries: r.industries || finalIndustries.join(", "),
         source_file: sourceFileName,
         status: "Not Active",
-        category: importCategory, 
+        category: importCategory === "Companies" ? "Scraped Companies" : "Scraped Orgs", 
       }));
 
       // 3. Generate Excel file and download
