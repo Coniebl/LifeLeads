@@ -21,7 +21,7 @@ export function CountryChart({ countriesData }: CountryChartProps) {
             Companies per Country
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            Hover a bar to see the companies in that country
+            Hover a bar to see the cities in that country
           </p>
         </div>
 
@@ -144,15 +144,18 @@ export function CountryChart({ countriesData }: CountryChartProps) {
             )}
           </div>
           <div className="flex flex-col gap-1.5 text-xs text-gray-500 dark:text-gray-300 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-            {tooltipData.item.companies.length > 0 ? (
-              tooltipData.item.companies.map((companyName, idx) => (
-                <div key={idx} className="flex items-center gap-2 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#046241] flex-shrink-0" />
-                  <span className="truncate">{companyName}</span>
+            {tooltipData.item.cities && tooltipData.item.cities.length > 0 ? (
+              tooltipData.item.cities.map((city, idx) => (
+                <div key={idx} className="flex items-center justify-between gap-2 font-medium">
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#046241] flex-shrink-0" />
+                    <span className="truncate">{city.name}</span>
+                  </div>
+                  <span className="text-gray-400 font-bold">{city.count}</span>
                 </div>
               ))
             ) : (
-              <div className="text-gray-400 italic">No companies listed</div>
+              <div className="text-gray-400 italic">No cities listed</div>
             )}
           </div>
         </div>
