@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app # The main wormhole! Links your local folder to /app in the container
+      - /app/node_modules # Tells Docker NOT to wormhole the node_modules folder (so it uses the container's version)
+      - /app/.next # Tells Docker NOT to wormhole the .next cache folder
+    command: npm run dev # Overrides the Dockerfile's CMD so it runs in development mode
+    environment:
+      - NODE_ENV=development
